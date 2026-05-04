@@ -2,10 +2,15 @@
 一键财报分析 - 财报解析器
 支持 PDF 和 Excel 格式
 """
+import os
+import tempfile
 import pandas as pd
 import pdfplumber
 import re
 from typing import Dict, Any
+
+# 设置 camelot 的临时目录为系统 temp 目录，避免权限问题
+os.environ['WORKDIR'] = tempfile.gettempdir()
 
 
 def parse_excel(filepath: str) -> Dict[str, pd.DataFrame]:
