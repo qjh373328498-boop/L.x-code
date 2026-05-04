@@ -86,15 +86,15 @@ def select_software():
 def get_python_path(software_path):
     """获取虚拟环境中的 Python 路径"""
     if os.name == 'nt':
-        return software_path / "venv" / "Scripts" / "python.exe"
+        return str(software_path / "venv" / "Scripts" / "python.exe")
     else:
-        return software_path / "venv" / "bin" / "python"
+        return str(software_path / "venv" / "bin" / "python")
 
 def get_cloudflared_path():
     """获取 cloudflared 路径（持久化存储）"""
     global CLOUDFLARED_PATH
     if CLOUDFLARED_PATH:
-        return CLOUDFLARED_PATH
+        return str(CLOUDFLARED_PATH)
     
     software_dir = Path(__file__).parent
     cloudflared_dir = software_dir / ".cloudflared"
@@ -107,7 +107,7 @@ def get_cloudflared_path():
     
     if cloudflared_path.exists():
         CLOUDFLARED_PATH = cloudflared_path
-        return cloudflared_path
+        return str(cloudflared_path)
     
     # 回退到旧路径（兼容性）
     if os.name == 'nt':
@@ -117,19 +117,19 @@ def get_cloudflared_path():
     
     if old_path.exists():
         CLOUDFLARED_PATH = old_path
-        return old_path
+        return str(old_path)
     
     CLOUDFLARED_PATH = cloudflared_path
-    return cloudflared_path
+    return str(cloudflared_path)
 
 def check_cloudflared_installed():
     """检查 cloudflared 是否已安装"""
-    cloudflared_path = get_cloudflared_path()
+    cloudflared_path = Path(get_cloudflared_path())
     return cloudflared_path.exists()
 
 def start_tunnel(port=8501):
     """启动 Cloudflare Tunnel 并返回公网地址"""
-    cloudflared_path = get_cloudflared_path()
+    cloudflared_path = Path(get_cloudflared_path())
     
     if not cloudflared_path.exists():
         print(f"{Colors.FAIL}❌ cloudflared 未找到{Colors.ENDC}")
@@ -139,8 +139,12 @@ def start_tunnel(port=8501):
     print(f"{Colors.WARNING}⏳ 首次启动可能需要 20-30 秒，请耐心等待...{Colors.ENDC}\n")
     
     # 停止旧的 tunnel 进程
-    subprocess.run(["pkill", "-f", "cloudflared"], 
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if os.name == 'nt':
+        subprocess.run(["taskkill", "/F", "/IM", "cloudflared.exe"], 
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        subprocess.run(["pkill", "-f", "cloudflared"], 
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(2)
     
     # 启动 tunnel
@@ -320,8 +324,12 @@ def launch_app(software):
             print(f"\n{Colors.OKCYAN}应用已停止{Colors.ENDC}")
             
             # 清理 tunnel 进程
-            subprocess.run(["pkill", "-f", "cloudflared"], 
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if os.name == 'nt':
+                subprocess.run(["taskkill", "/F", "/IM", "cloudflared.exe"], 
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                subprocess.run(["pkill", "-f", "cloudflared"], 
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             
             return True
             
