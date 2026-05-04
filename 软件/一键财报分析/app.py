@@ -5,7 +5,19 @@ import streamlit as st
 import pandas as pd
 import os
 
-# 页面配置
+# ========== 性能优化：延迟导入 ==========
+@st.cache_resource
+def get_utils():
+    """延迟导入工具模块，减少首次加载时间"""
+    from utils import parser, industry, ratios, formatters
+    return {
+        'parser': parser,
+        'industry': industry,
+        'ratios': ratios,
+        'formatters': formatters,
+    }
+
+# ========== 页面配置 ==========
 st.set_page_config(
     page_title="一键财报分析",
     page_icon="📊",
@@ -13,35 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 缓存优化，减少警告
-@st.cache_data
-def get_placeholder():
-    return None
-
-get_placeholder()
-
-# 自定义 CSS
-st.markdown("""
-<style>
-.metric-card {
-    background-color: #f0f2f6;
-    border-radius: 10px;
-    padding: 20px;
-    margin: 10px 0;
-}
-.metric-label {
-    font-size: 14px;
-    color: #666;
-}
-.metric-value {
-    font-size: 28px;
-    font-weight: bold;
-    color: #1f77b4;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Session State 初始化
+# ========== Session State 统一初始化 ==========
 if 'uploaded_file' not in st.session_state:
     st.session_state.uploaded_file = None
 if 'financial_data' not in st.session_state:
@@ -50,6 +34,10 @@ if 'company_info' not in st.session_state:
     st.session_state.company_info = {}
 if 'industry' not in st.session_state:
     st.session_state.industry = None
+if 'ratios' not in st.session_state:
+    st.session_state.ratios = None
+if 'last_page' not in st.session_state:
+    st.session_state.last_page = None
 
 # 侧边栏
 st.sidebar.title("📊 一键财报分析")
@@ -142,8 +130,9 @@ elif menu == "📁 财报上传":
                 with open(filepath, "wb") as f:
                     f.write(uploaded_file.getbuffer())
                 
-                # 解析财报
-                data = parse_financial_report(filepath)
+                # 解析财报（使用缓存）
+                utils = get_utils()
+                data = utils['parser'].parse_financial_report(filepath)
                 
                 st.session_state.uploaded_file = uploaded_file
                 st.session_state.financial_data = data
@@ -151,7 +140,10 @@ elif menu == "📁 财报上传":
                 
                 # 行业识别
                 if company_name:
-                    st.session_state.industry = detect_industry(company_name)
+                    st.session_state.industry = utils['industry'].detect_industry(company_name)
+                
+                # 预计算比率（缓存）
+                st.session_state.ratios = utils['ratios'].calculate_all_ratios(data)
                 
                 st.success("✅ 解析成功！")
                 st.rerun()
