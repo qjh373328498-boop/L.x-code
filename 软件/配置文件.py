@@ -8,6 +8,9 @@ import sys
 import subprocess
 from pathlib import Path
 
+# 全局变量：cloudflared 路径
+CLOUDFLARED_PATH = None
+
 class Colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -135,17 +138,25 @@ def install_deps(software_path):
 
 
 def download_cloudflared():
-    """下载 Cloudflare Tunnel 工具"""
-    cloudflared_path = Path("/tmp/cloudflared-linux-amd64")
+    """下载 Cloudflare Tunnel 工具（持久化存储）"""
+    # 下载到软件目录，避免重启丢失
+    software_dir = Path(__file__).parent
+    cloudflared_path = software_dir / ".cloudflared" / "cloudflared-linux-amd64"
     
     if cloudflared_path.exists():
         print(f"  {Colors.OKCYAN}ℹ️  Cloudflare Tunnel 工具已存在，跳过下载{Colors.ENDC}")
+        # 更新全局路径
+        global CLOUDFLARED_PATH
+        CLOUDFLARED_PATH = cloudflared_path
         return True
     
     print(f"  {Colors.OKBLUE}正在下载 Cloudflare Tunnel 工具...{Colors.ENDC}")
     try:
         import urllib.request
         url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
+        
+        # 创建目录
+        cloudflared_path.parent.mkdir(parents=True, exist_ok=True)
         
         # 显示下载进度
         def reporthook(blocknum, blocksize, totalsize):
@@ -156,7 +167,11 @@ def download_cloudflared():
         
         urllib.request.urlretrieve(url, cloudflared_path, reporthook)
         os.chmod(cloudflared_path, 0o755)
-        print(f"  {Colors.OKGREEN}✅ Cloudflare Tunnel 工具下载完成{Colors.ENDC}\n")
+        print(f"  {Colors.OKGREEN}✅ Cloudflare Tunnel 工具下载完成 (已保存到 .cloudflared/ 目录){Colors.ENDC}\n")
+        
+        # 更新全局路径
+        global CLOUDFLARED_PATH
+        CLOUDFLARED_PATH = cloudflared_path
         return True
     except Exception as e:
         print(f"  {Colors.WARNING}⚠️  下载失败：{e}{Colors.ENDC}")

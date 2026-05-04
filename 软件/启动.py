@@ -12,6 +12,9 @@ import webbrowser
 import re
 from pathlib import Path
 
+# 全局变量：cloudflared 路径（从配置文件同步）
+CLOUDFLARED_PATH = None
+
 class Colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -88,8 +91,27 @@ def get_python_path(software_path):
         return software_path / "venv" / "bin" / "python"
 
 def get_cloudflared_path():
-    """获取 cloudflared 路径"""
-    return Path("/tmp/cloudflared-linux-amd64")
+    """获取 cloudflared 路径（持久化存储）"""
+    global CLOUDFLARED_PATH
+    if CLOUDFLARED_PATH:
+        return CLOUDFLARED_PATH
+    
+    # 优先从软件目录查找
+    software_dir = Path(__file__).parent
+    cloudflared_path = software_dir / ".cloudflared" / "cloudflared-linux-amd64"
+    
+    if cloudflared_path.exists():
+        CLOUDFLARED_PATH = cloudflared_path
+        return cloudflared_path
+    
+    # 回退到旧路径（兼容性）
+    old_path = Path("/tmp/cloudflared-linux-amd64")
+    if old_path.exists():
+        CLOUDFLARED_PATH = old_path
+        return old_path
+    
+    CLOUDFLARED_PATH = cloudflared_path
+    return cloudflared_path
 
 def check_cloudflared_installed():
     """检查 cloudflared 是否已安装"""
