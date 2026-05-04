@@ -135,9 +135,10 @@ elif menu == "📁 财报上传":
     if uploaded_file and st.button("开始解析", type="primary"):
         with st.spinner("正在解析财报..."):
             try:
-                # 保存文件
-                filepath = f"data/{uploaded_file.name}"
-                os.makedirs("data", exist_ok=True)
+                # 保存到临时文件
+                import tempfile
+                temp_dir = tempfile.gettempdir()
+                filepath = os.path.join(temp_dir, uploaded_file.name)
                 with open(filepath, "wb") as f:
                     f.write(uploaded_file.getbuffer())
                 

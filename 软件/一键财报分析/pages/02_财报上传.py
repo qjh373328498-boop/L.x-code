@@ -8,7 +8,7 @@ st.set_page_config(page_title="财报上传", page_icon="📁", layout="wide")
 
 st.title("📁 财报上传与解析")
 
-if st.session_state.uploaded_file:
+if hasattr(st.session_state, "uploaded_file") and st.session_state.uploaded_file:
     st.success(f"✅ 已加载：{st.session_state.uploaded_file.name}")
     if st.button("🗑️ 重新上传"):
         st.session_state.uploaded_file = None
