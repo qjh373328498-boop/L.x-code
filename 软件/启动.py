@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 启动文件 - 统一入口
-快速启动选中的软件，跳过环境检测
+快速启动选中的软件，支持自动内网穿透
 """
 import os
 import sys
@@ -9,6 +9,7 @@ import subprocess
 import time
 import socket
 import webbrowser
+import re
 from pathlib import Path
 
 class Colors:
@@ -81,10 +82,111 @@ def select_software():
 
 def get_python_path(software_path):
     """获取虚拟环境中的 Python 路径"""
-    if os.name == 'nt':  # Windows
+    if os.name == 'nt':
         return software_path / "venv" / "Scripts" / "python.exe"
-    else:  # Linux/Mac
+    else:
         return software_path / "venv" / "bin" / "python"
+
+def get_cloudflared_path():
+    """获取 cloudflared 路径"""
+    return Path("/tmp/cloudflared-linux-amd64")
+
+def check_cloudflared():
+    """检查并下载 cloudflared"""
+    cloudflared_path = get_cloudflared_path()
+    
+    if cloudflared_path.exists():
+        return True
+    
+    print(f"\n{Colors.OKBLUE}正在下载 Cloudflare Tunnel 工具...{Colors.ENDC}")
+    try:
+        import urllib.request
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
+        urllib.request.urlretrieve(url, cloudflared_path)
+        os.chmod(cloudflared_path, 0o755)
+        print(f"{Colors.OKGREEN}✓ 下载完成{Colors.ENDC}")
+        return True
+    except Exception as e:
+        print(f"{Colors.FAIL}❌ 下载失败：{e}{Colors.ENDC}")
+        return False
+
+def start_tunnel(port=8501):
+    """启动 Cloudflare Tunnel 并返回公网地址"""
+    cloudflared_path = get_cloudflared_path()
+    
+    if not cloudflared_path.exists():
+        print(f"{Colors.FAIL}❌ cloudflared 未找到{Colors.ENDC}")
+        return None
+    
+    print(f"\n{Colors.OKBLUE}正在启动 Cloudflare Tunnel...{Colors.ENDC}")
+    print(f"{Colors.WARNING}⏳ 首次启动可能需要 20-30 秒，请耐心等待...{Colors.ENDC}\n")
+    
+    # 停止旧的 tunnel 进程
+    subprocess.run(["pkill", "-f", "cloudflared"], 
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(2)
+    
+    # 启动 tunnel
+    try:
+        cmd = [str(cloudflared_path), "tunnel", "--url", f"http://localhost:{port}", "--protocol", "http2"]
+        tunnel_proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+        
+        # 等待获取公网地址
+        print("正在获取公网地址...")
+        start_time = time.time()
+        timeout = 60  # 60 秒超时
+        
+        while True:
+            if time.time() - start_time > timeout:
+                print(f"{Colors.FAIL}❌ 获取地址超时{Colors.ENDC}")
+                tunnel_proc.terminate()
+                return None
+            
+            line = tunnel_proc.stdout.readline()
+            if not line:
+                if tunnel_proc.poll() is not None:
+                    print(f"{Colors.FAIL}❌ Tunnel 进程异常退出{Colors.ENDC}")
+                    return None
+                time.sleep(0.5)
+                continue
+            
+            # 查找包含 trycloudflare.com 的行
+            if "trycloudflare.com" in line and "https://" in line:
+                # 提取 URL
+                match = re.search(r'https://[^\s|]+\s*trycloudflare\.com', line)
+                if match:
+                    url = match.group(0).strip()
+                    # 清理可能的多余字符
+                    url = url.rstrip('│|').strip()
+                    print(f"\n{Colors.OKGREEN}✓ Tunnel 启动成功！{Colors.ENDC}")
+                    print(f"\n{Colors.BOLD}🌐 公网访问地址：{Colors.OKCYAN}{url}{Colors.ENDC}\n")
+                    return url
+            
+            # 显示进度
+            elapsed = int(time.time() - start_time)
+            if elapsed % 5 == 0:
+                print(f"⏳ 等待中... ({elapsed}秒)", end='\r')
+    
+    except Exception as e:
+        print(f"{Colors.FAIL}❌ 启动失败：{e}{Colors.ENDC}")
+        return None
+
+def get_local_ip():
+    """获取本机局域网 IP"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except:
+        return "192.168.x.x"
 
 def launch_app(software):
     """启动应用"""
@@ -118,67 +220,74 @@ def launch_app(software):
     print(f"\n{Colors.OKBLUE}━━━ 访问方式（任选其一）━━━{Colors.ENDC}")
     print(f"  {Colors.OKGREEN}[1] 本机访问{Colors.ENDC}      http://localhost:8501")
     print(f"                     （仅限当前电脑使用）")
-    print(f"  {Colors.OKGREEN}[2] 局域网访问{Colors.ENDC}    http://192.168.x.x:8501")
+    print(f"  {Colors.OKGREEN}[2] 局域网访问{Colors.ENDC}    http://{get_local_ip()}:8501")
     print(f"                     （同一 WiFi 下的手机/平板可访问）")
-    print(f"  {Colors.OKGREEN}[3] 公网访问{Colors.ENDC}      http://x.x.x.x:8501")
-    print(f"                     （任何地方都能访问，需确保网络通畅）")
+    print(f"  {Colors.OKGREEN}[3] 公网访问{Colors.ENDC}      自动生成公网地址")
+    print(f"                     （任何地方都能访问，推荐使用）")
     print(f"\n{Colors.OKCYAN}按 Ctrl+C 停止服务{Colors.ENDC}")
     print(f"{Colors.OKBLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.ENDC}\n")
     
-    # 获取本机 IP
-    import socket
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-    except:
-        local_ip = "192.168.x.x"
-    
-    try:
-        # 使用 streamlit run 启动
+        # 启动 Streamlit 服务
         cmd = f'"{venv_python}" -m streamlit run "{app_path}" --server.headless true --server.address 0.0.0.0 --server.port 8501'
+        streamlit_proc = subprocess.Popen(
+            cmd, 
+            shell=True, 
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL
+        )
         
-        # 后台启动 streamlit
-        subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # 等待服务器启动
-        print("等待服务器启动...")
-        import time
+        print("⏳ 等待 Streamlit 服务启动...")
         time.sleep(5)
+        print(f"{Colors.OKGREEN}✓ 服务已就绪{Colors.ENDC}\n")
         
-        # 让用户选择访问方式
-        print("\n请选择访问方式：")
-        print("  [1] 本机访问   （仅限当前电脑使用）")
-        print("  [2] 局域网访问 （同一 WiFi 下的手机/平板可访问）")
-        print("  [3] 公网访问   （任何地方都能访问）")
+        # 选择访问方式
+        print("请选择访问方式：")
+        print("  [1] 本机访问   （仅限当前电脑）")
+        print("  [2] 局域网访问 （同 WiFi 设备）")
+        print("  [3] 公网访问   （任何地方，自动配置）")
+        
         try:
-            choice = input("请输入选项 (1-3，默认 1): ").strip()
+            choice = input(f"\n{Colors.BOLD}请输入选项 (1-3, 默认 1): {Colors.ENDC}").strip()
         except EOFError:
             choice = "1"
         
         if not choice:
             choice = "1"
         
-        # 打开浏览器
-        import webbrowser
-        if choice == "1":
-            url = "http://localhost:8501"
-            print(f"\n正在打开：{url}")
+        # 处理选择
+        if choice == "3":
+            # 公网访问 - 启动 Cloudflare Tunnel
+            if check_cloudflared():
+                public_url = start_tunnel(8501)
+                if public_url:
+                    time.sleep(2)  # 等待 Cloudflare 生效
+                    webbrowser.open(public_url)
+                    print(f"{Colors.OKGREEN}✓ 已自动打开浏览器{Colors.ENDC}")
+                else:
+                    print(f"\n{Colors.WARNING}⚠️  公网访问启动失败，降级为本机访问{Colors.ENDC}")
+                    webbrowser.open("http://localhost:8501")
+            else:
+                print(f"\n{Colors.WARNING}⚠️  降级为本机访问{Colors.ENDC}")
+                webbrowser.open("http://localhost:8501")
+        
         elif choice == "2":
-            url = f"http://{local_ip}:8501"
+            # 局域网访问
+            url = f"http://{get_local_ip()}:8501"
             print(f"\n正在打开：{url}")
-        elif choice == "3":
-            url = "http://123.88.241.90:8501"
-            print(f"\n正在打开：{url}")
+            webbrowser.open(url)
+            print(f"{Colors.OKGREEN}✓ 已打开浏览器{Colors.ENDC}")
+        
         else:
+            # 本机访问（默认）
             url = "http://localhost:8501"
-            print(f"\n无效选项，默认打开：{url}")
+            print(f"\n正在打开：{url}")
+            webbrowser.open(url)
+            print(f"{Colors.OKGREEN}✓ 已打开浏览器{Colors.ENDC}")
         
-        webbrowser.open(url)
-        
-        print(f"✓ 已打开浏览器")
-        print(f"\n按 Ctrl+C 停止服务\n")
+        print(f"\n{Colors.OKBLUE}━━━ 服务运行中 ━━━{Colors.ENDC}")
+        print(f"{Colors.WARNING}按 Ctrl+C 停止服务{Colors.ENDC}")
+        print(f"{Colors.OKBLUE}━━━━━━━━━━━━━━━━━━━━━━{Colors.ENDC}\n")
         
         # 等待用户中断
         try:
@@ -186,13 +295,19 @@ def launch_app(software):
                 time.sleep(1)
         except KeyboardInterrupt:
             print(f"\n{Colors.OKCYAN}应用已停止{Colors.ENDC}")
+            
+            # 清理 tunnel 进程
+            subprocess.run(["pkill", "-f", "cloudflared"], 
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
             return True
+            
     except Exception as e:
         print(f"\n{Colors.FAIL}❌ 启动失败：{e}{Colors.ENDC}")
         print(f"\n{Colors.WARNING}可能的原因:{Colors.ENDC}")
         print(f"  1. 虚拟环境未创建：python 配置文件.py")
-        print(f"  2. 缺少依赖：进入软件目录运行 pip install -r requirements.txt")
-        print(f"  3. 端口被占用：修改 app.py 中的端口号")
+        print(f"  2. 端口被占用：修改 app.py 中的端口号")
+        print(f"  3. 缺少依赖：pip install -r requirements.txt")
         print(f"\n按回车键关闭...")
         try:
             input()
@@ -219,7 +334,6 @@ def main():
         print(f"\n是否立即配置？")
         choice = input("输入 y 配置，其他取消：").strip().lower()
         if choice == 'y':
-            # 调用配置文件
             config_script = Path(__file__).parent / "配置文件.py"
             subprocess.run([sys.executable, str(config_script)])
             print(f"\n配置完成后，请重新运行：python 启动.py")
