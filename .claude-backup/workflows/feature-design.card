@@ -1,0 +1,45 @@
+---
+name: feature-design-card
+type: workflow-card
+version: 1.0
+trigger: 需求/设计/功能/规格/feature/design
+---
+
+# 需求设计工作流（精简卡）
+
+## 🎯 触发
+用户提到：需求、设计、功能规格、技术方案、feature、design
+
+## 🔄 快速流程
+1. **询问**：功能描述 + 用户角色 + 使用场景
+2. **读取**：项目文档（.monkeycode/docs/）
+3. **生成需求**（EARS 模式）：
+   - 用户故事
+   - 验收标准（EARS 句式）
+   - INCOSE 质量验证
+4. **生成设计**：
+   - 架构图（Mermaid）
+   - 组件设计
+   - 数据模型
+   - 错误处理
+   - 测试策略
+5. **输出**：`.monkeycode/specs/{FEATURE_NAME}/`
+   - `requirements.md` - 需求文档
+   - `design.md` - 设计文档
+
+## 📝 确认话术
+"帮你完成{功能}的需求和设计。包括：
+1. 使用 EARS 模式编写需求文档
+2. 生成技术设计规格（含架构图）
+3. 定义验收标准和测试策略
+
+这个功能的主要用户是谁？解决什么问题？"
+
+## 📋 完整技能
+读取：`skills/feature-design/SKILL.md`
+
+## ⚠️ 注意事项
+- 需求必须符合 EARS 句式
+- 通过 INCOSE 语义质量检查
+- 每轮最多问 3 个问题
+- 设计文档包含 Mermaid 架构图

@@ -1,0 +1,67 @@
+{
+  "version": "1.0.0",
+  "description": "Skills 配置文件 - 方案 D 动态加载",
+  
+  "threshold": {
+    "direct_trigger": 80,
+    "confirm_trigger": 60,
+    "ask_confirm": 40
+  },
+  
+  "intent_multiplier": {
+    "strong_intent": 1.0,
+    "weak_intent": 0.6,
+    "negative": 0.0
+  },
+  
+  "context_multiplier": {
+    "related_context": 1.2,
+    "neutral": 1.0,
+    "unrelated": 0.8
+  },
+  
+  "core_skills": [
+    "exam-prep-workflow",
+    "competition-prep-workflow",
+    "data-analysis-workflow",
+    "weekly-planning-workflow",
+    "research-paper-workflow-isolated",
+    "research-paper-workflow-with-kb",
+    "literature-search-workflow",
+    "knowledge-manage-workflow",
+    "feature-design"
+  ],
+  
+  "weight": {
+    "level_1_keyword": 100,
+    "level_2_keyword": 70,
+    "level_3_keyword": 50,
+    "combination": 80
+  },
+  
+  "negative_words": [
+    "不想", "不要", "不需要", "别", "甭",
+    "没有", "还没", "尚未",
+    "怎么不", "为什么不", "何必"
+  ],
+  
+  "strong_intent_words": [
+    "帮我", "我要", "需要", "怎么做", "准备"
+  ],
+  
+  "weak_intent_words": [
+    "了解一下", "看看", "问一下", "是什么"
+  ],
+  
+  "cache": {
+    "enabled": true,
+    "max_skills": 20,
+    "ttl_minutes": 30
+  },
+  
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "file": ".claude/logs/skills-usage.log"
+  }
+}

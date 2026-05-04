@@ -1,0 +1,44 @@
+---
+name: git-sync-card
+type: workflow-card
+version: 1.0
+trigger: 提交/同步/push/commit/git
+---
+
+# Git 同步工作流（精简卡）
+
+## 🎯 触发
+用户提到：提交代码、同步、push、commit、git 同步
+
+## 🔄 快速流程
+1. **检查状态**：`git status`
+2. **查看改动**：`git diff`
+3. **检查 Submodules**：
+   - 如果有 `.gitmodules`，先更新 submodules
+   - 检查 submodule 是否有改动
+4. **提交主项目**：
+   ```bash
+   git add .
+   git commit -m "<类型>: <描述>"
+   git push
+   ```
+5. **处理 Submodules**（如有改动）：
+   - 进入每个 submodule
+   - 分别创建分支、提交、push
+   - 返回主项目更新引用
+
+## 📝 确认话术
+"帮你提交代码。当前改动：
+- 主项目：{文件列表}
+- Submodules: {名称和改动}
+
+确认提交吗？提交信息建议：'{建议的 commit message}'"
+
+## 📋 完整技能
+读取：`skills/git-sync/SKILL.md`（如存在）
+
+## ⚠️ 注意事项
+- 提交前检查是否是 master/main 分支
+- 是则先创建日期分支（YYMMDD-type-desc）
+- Submodule 改动需分别提交
+- 使用 `-o merge_request.create` 自动创建 MR
