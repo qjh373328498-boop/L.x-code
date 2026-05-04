@@ -51,9 +51,48 @@ else:
                 # 解析财报
                 data = parse_financial_report(filepath)
                 
+                # 计算置信度
+                bs = data.get('balance_sheet', {})
+                ic = data.get('income_stmt', {})
+                cf = data.get('cash_flow', {})
+                
+                assets = bs.get('总资产', 0) or bs.get('资产总计', 0)
+                liabilities = bs.get('负债合计', 0) or bs.get('总负债', 0)
+                equity = bs.get('股东权益', 0) or bs.get('所有者权益', 0)
+                
+                diff = abs(assets - liabilities - equity) / max(assets, 1) * 100 if assets > 0 else 100
+                
+                # 置信度评分
+                score = 0
+                score += min(4, len(bs) / 10 * 4)  # 资产负债表 4 分
+                score += min(3, len(ic) / 5 * 3)    # 利润表 3 分
+                score += min(2, len(cf) / 3 * 2)    # 现金流 2 分
+                score += 1 if diff < 1 else 0       # 会计等式 1 分
+                
+                confidence = score * 10
+                
                 st.session_state.uploaded_file = uploaded_file
                 st.session_state.financial_data = data
+                st.session_state.parse_confidence = confidence
+                st.session_state.parse_diff = diff
                 st.session_state.company_info["name"] = company_name
+                
+                # 显示置信度评估
+                if confidence >= 90:
+                    st.success(f"✅ 解析置信度：**{confidence:.1f}%** (会计等式差异 {diff:.2f}%)")
+                elif confidence >= 70:
+                    st.warning(f"⚠️ 解析置信度：**{confidence:.1f}%** (会计等式差异 {diff:.2f}%)")
+                else:
+                    st.error(f"❌ 解析置信度：**{confidence:.1f}%** (会计等式差异 {diff:.2f}%)")
+                
+                # 显示提取的字段统计
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("资产负债表", f"{len(bs)} 个字段")
+                with col2:
+                    st.metric("利润表", f"{len(ic)} 个字段")
+                with col3:
+                    st.metric("现金流量表", f"{len(cf)} 个字段")
                 
                 # 行业识别
                 if company_name or business_desc:
