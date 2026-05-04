@@ -78,6 +78,14 @@ def process_statement(df: pd.DataFrame, stmt_type: str) -> Dict[str, float]:
     """处理财务报表，提取关键项目"""
     result = {}
     
+    # 精确匹配优先，使用有序字典，更具体的项目放前面
+    mapping_order = [
+        "流动资产", "固定资产", "总资产", 
+        "流动负债", "负债合计", "总负债", 
+        "股东权益", "货币资金", "应收账款", "存货",
+        "营业收入", "营业成本", "营业利润", "净利润"
+    ]
+    
     # 映射规则
     mapping = {
         "balance": {
@@ -88,13 +96,12 @@ def process_statement(df: pd.DataFrame, stmt_type: str) -> Dict[str, float]:
             "固定资产": ["固定资产", "非流动资产"],
             "总资产": ["资产总计", "总资产"],
             "流动负债": ["流动负债合计", "流动负债总计"],
-            "总负债": ["负债合计", "总负债"],
-            "股东权益": ["所有者权益", "股东权益合计"],
+            "总负债": ["负债合计"],  # 精确匹配"负债合计"
+            "股东权益": ["所有者权益合计", "股东权益合计", "所有者权益", "股东权益"],
         },
         "income": {
             "营业收入": ["营业收入", "营业总收入", "销售收入"],
             "营业成本": ["营业成本", "销售成本"],
-            "毛利": ["毛利", "毛利润"],
             "营业利润": ["营业利润", "经营利润"],
             "净利润": ["净利润", "归母净利润"],
         },
@@ -115,29 +122,35 @@ def process_statement(df: pd.DataFrame, stmt_type: str) -> Dict[str, float]:
 
 def extract_value(df: pd.DataFrame, keywords: list) -> float:
     """从 DataFrame 中提取指定项目的值"""
+    best_match = None
+    best_score = 0
+    
     for keyword in keywords:
         # 尝试匹配行
         for _, row in df.iterrows():
             for cell in row:
-                if isinstance(cell, str) and keyword in cell:
-                    # 找到对应的数值（通常是下一列或同一行的其他列）
-                    idx = row.tolist().index(cell)
-                    for i in range(idx + 1, len(row)):
-                        try:
-                            val = float(row.iloc[i])
-                            return val
-                        except (ValueError, TypeError):
-                            continue
+                if isinstance(cell, str):
+                    # 计算匹配得分：完全匹配=2，包含匹配=1
+                    if cell == keyword:
+                        score = 2  # 完全匹配
+                    elif keyword in cell:
+                        score = 1  # 包含匹配
+                    else:
+                        continue
+                    
+                    # 只保留最佳匹配
+                    if score > best_score:
+                        best_score = score
+                        # 提取数值
+                        idx = row.tolist().index(cell)
+                        for i in range(idx + 1, len(row)):
+                            try:
+                                best_match = float(row.iloc[i])
+                                break
+                            except (ValueError, TypeError):
+                                continue
     
-    # 尝试从第二列提取（常见格式：项目名称 | 本期金额 | 上期金额）
-    if len(df.columns) >= 2:
-        for _, row in df.iterrows():
-            try:
-                return float(row.iloc[1])
-            except (ValueError, TypeError):
-                continue
-    
-    return 0.0
+    return best_match if best_match is not None else 0.0
 
 
 def parse_pdf(filepath: str) -> Dict[str, pd.DataFrame]:
