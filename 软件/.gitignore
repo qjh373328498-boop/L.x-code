@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# 虚拟环境
+venv/
+venv.bak/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 测试文件
+*.pdf
+test_*.py
+debug_*.py
+
+# 日志
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
