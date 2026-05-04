@@ -113,17 +113,21 @@ def install_deps(software_path):
         pip_path = software_path / "venv" / "bin" / "pip"
     
     print(f"  {Colors.OKBLUE}正在安装依赖（使用清华镜像源）...{Colors.ENDC}")
+    print(f"  {Colors.OKCYAN}(显示进度条，请稍候...){Colors.ENDC}\n")
     
-    cmd = [
-        str(pip_path),
-        "install",
-        "-r", str(requirements),
-        "-i", "https://pypi.tuna.tsinghua.edu.cn/simple"
-    ]
+    # 使用 shell=True 显示进度条
+    if os.name == 'nt':
+        cmd = f'"{pip_path}" install -r "{requirements}" -i https://pypi.tuna.tsinghua.edu.cn/simple'
+    else:
+        cmd = f'"{pip_path}" install -r "{requirements}" -i https://pypi.tuna.tsinghua.edu.cn/simple'
     
     try:
-        subprocess.run(cmd, check=True)
-        print(f"  {Colors.OKGREEN}✅ 依赖安装完成{Colors.ENDC}")
+        # 不捕获输出，让 pip 直接显示进度条
+        result = subprocess.run(cmd, shell=True)
+        if result.returncode == 0:
+            print(f"\n  {Colors.OKGREEN}✅ 依赖安装完成{Colors.ENDC}")
+        else:
+            print(f"\n  {Colors.WARNING}⚠️  安装完成但有警告{Colors.ENDC}")
         return True
     except Exception as e:
         print(f"  {Colors.WARNING}⚠️  安装警告：{e}{Colors.ENDC}")

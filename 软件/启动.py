@@ -96,7 +96,7 @@ def launch_app(software):
     # 启动应用
     print(f"\n{Colors.OKGREEN}  正在启动：{software['name']}{Colors.ENDC}")
     print(f"  地址：http://localhost:8501")
-    print(f"  按 Ctrl+C 停止服务\n")
+    print(f"  {Colors.OKCYAN}按 Ctrl+C 停止服务{Colors.ENDC}\n")
     
     try:
         if os.name == 'nt':
