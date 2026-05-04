@@ -111,15 +111,26 @@ def launch_app(software):
         else:
             cmd = f'"{venv_python}" "{app_path}"'
         
+        # 直接运行，不捕获输出
         subprocess.run(cmd, shell=True)
+        
+        print(f"\n{Colors.OKCYAN}应用已退出{Colors.ENDC}")
+        print(f"按回车键关闭...")
+        input()
         return True
         
     except KeyboardInterrupt:
         print(f"\n{Colors.OKCYAN}应用已停止{Colors.ENDC}")
+        print(f"按回车键关闭...")
+        input()
         return True
     except Exception as e:
-        print(f"{Colors.FAIL}❌ 启动失败：{e}{Colors.ENDC}")
-        print(f"\n{Colors.OKCYAN}按回车键退出...{Colors.ENDC}")
+        print(f"\n{Colors.FAIL}❌ 启动失败：{e}{Colors.ENDC}")
+        print(f"\n{Colors.WARNING}可能的原因:{Colors.ENDC}")
+        print(f"  1. 虚拟环境未创建：python 配置文件.py")
+        print(f"  2. 缺少依赖：进入软件目录运行 pip install -r requirements.txt")
+        print(f"  3. 端口被占用：修改 app.py 中的端口号")
+        print(f"\n按回车键关闭...")
         input()
         return False
 

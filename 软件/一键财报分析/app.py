@@ -13,6 +13,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# 缓存优化，减少警告
+@st.cache_data
+def get_placeholder():
+    return None
+
+get_placeholder()
+
 # 自定义 CSS
 st.markdown("""
 <style>
