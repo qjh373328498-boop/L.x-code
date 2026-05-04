@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-启动文件 - 快速启动应用
-跳过环境检测和依赖安装
+启动文件 - 统一入口
+快速启动选中的软件，跳过环境检测
 """
 import os
 import sys
@@ -16,40 +16,87 @@ class Colors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
 
-def get_python_path():
-    """获取虚拟环境中的 Python 路径"""
-    software_dir = Path(__file__).parent
-    
-    if os.name == 'nt':  # Windows
-        return software_dir / "venv" / "Scripts" / "python.exe"
-    else:  # Linux/Mac
-        return software_dir / "venv" / "bin" / "python"
+def print_header():
+    print(f"\n{Colors.OKCYAN}{'=' * 50}{Colors.ENDC}")
+    print(f"{Colors.BOLD}       软件启动器{Colors.ENDC}")
+    print(f"{Colors.OKCYAN}{'=' * 50}{Colors.ENDC}\n")
 
-def main():
+def get_software_list():
+    """获取可用软件列表"""
     software_dir = Path(__file__).parent
-    venv_python = get_python_path()
-    app_path = software_dir / "app.py"
+    software_list = []
+    
+    for item in software_dir.iterdir():
+        if item.is_dir() and (item / "app.py").exists():
+            initialized = (item / ".initialized").exists()
+            software_list.append({
+                "name": item.name,
+                "path": item,
+                "initialized": initialized
+            })
+    
+    return sorted(software_list, key=lambda x: x["name"])
+
+def select_software():
+    """选择软件"""
+    software_list = get_software_list()
+    
+    if not software_list:
+        print(f"{Colors.FAIL}❌ 未找到可用的软件{Colors.ENDC}")
+        return None
+    
+    print(f"{Colors.OKBLUE}发现 {len(software_list)} 个软件：{Colors.ENDC}\n")
+    
+    for i, software in enumerate(software_list, 1):
+        icon = "✅" if software["initialized"] else "⚠️"
+        print(f"  {i}. {software['name']} {icon}")
+    
+    print(f"  0. 退出")
+    print()
+    
+    choice = input(f"{Colors.BOLD}请选择要启动的软件 (0-{len(software_list)}): {Colors.ENDC}").strip()
+    
+    if choice == "0":
+        return None
+    
+    try:
+        index = int(choice) - 1
+        if 0 <= index < len(software_list):
+            return software_list[index]
+        else:
+            print(f"{Colors.FAIL}无效的选项！{Colors.ENDC}")
+            return None
+    except ValueError:
+        print(f"{Colors.FAIL}请输入数字！{Colors.ENDC}")
+        return None
+
+def get_python_path(software_path):
+    """获取虚拟环境中的 Python 路径"""
+    if os.name == 'nt':  # Windows
+        return software_path / "venv" / "Scripts" / "python.exe"
+    else:  # Linux/Mac
+        return software_path / "venv" / "bin" / "python"
+
+def launch_app(software):
+    """启动应用"""
+    venv_python = get_python_path(software["path"])
+    app_path = software["path"] / "app.py"
     
     # 检查虚拟环境
     if not venv_python.exists():
-        print(f"{Colors.FAIL}❌ 虚拟环境不存在{Colors.ENDC}")
-        print(f"\n请先运行：配置文件.py")
-        print(f"或双击：一键启动.bat\n")
-        input("按回车退出...")
+        print(f"\n{Colors.FAIL}❌ 虚拟环境不存在{Colors.ENDC}")
+        print(f"请先运行：配置文件.py")
         return False
     
     # 检查 app.py
     if not app_path.exists():
         print(f"{Colors.FAIL}❌ 未找到 app.py{Colors.ENDC}")
-        input("按回车退出...")
         return False
     
     # 启动应用
-    print(f"\n{Colors.OKCYAN}{'=' * 50}{Colors.ENDC}")
-    print(f"{Colors.BOLD}  正在启动应用...{Colors.ENDC}")
+    print(f"\n{Colors.OKGREEN}  正在启动：{software['name']}{Colors.ENDC}")
     print(f"  地址：http://localhost:8501")
-    print(f"  按 Ctrl+C 停止服务")
-    print(f"{Colors.OKCYAN}{'=' * 50}{Colors.ENDC}\n")
+    print(f"  按 Ctrl+C 停止服务\n")
     
     try:
         if os.name == 'nt':
@@ -66,6 +113,28 @@ def main():
     except Exception as e:
         print(f"{Colors.FAIL}❌ 启动失败：{e}{Colors.ENDC}")
         return False
+
+def main():
+    print_header()
+    
+    software = select_software()
+    if not software:
+        print(f"\n{Colors.OKCYAN}已退出{Colors.ENDC}")
+        return
+    
+    if not software["initialized"]:
+        print(f"\n{Colors.WARNING}⚠️  该软件尚未配置{Colors.ENDC}")
+        choice = input("是否立即配置？(y/n): ").strip().lower()
+        if choice == 'y':
+            # 调用配置文件
+            config_script = Path(__file__).parent / "配置文件.py"
+            subprocess.run([sys.executable, str(config_script)])
+            return
+        else:
+            print(f"\n{Colors.OKCYAN}已取消{Colors.ENDC}")
+            return
+    
+    launch_app(software)
 
 if __name__ == "__main__":
     try:
