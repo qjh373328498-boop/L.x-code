@@ -96,16 +96,25 @@ def get_cloudflared_path():
     if CLOUDFLARED_PATH:
         return CLOUDFLARED_PATH
     
-    # 优先从软件目录查找
     software_dir = Path(__file__).parent
-    cloudflared_path = software_dir / ".cloudflared" / "cloudflared-linux-amd64"
+    cloudflared_dir = software_dir / ".cloudflared"
+    
+    # 根据操作系统选择正确的文件名
+    if os.name == 'nt':  # Windows
+        cloudflared_path = cloudflared_dir / "cloudflared.exe"
+    else:  # Linux
+        cloudflared_path = cloudflared_dir / "cloudflared"
     
     if cloudflared_path.exists():
         CLOUDFLARED_PATH = cloudflared_path
         return cloudflared_path
     
     # 回退到旧路径（兼容性）
-    old_path = Path("/tmp/cloudflared-linux-amd64")
+    if os.name == 'nt':
+        old_path = Path("/tmp/cloudflared.exe")
+    else:
+        old_path = Path("/tmp/cloudflared-linux-amd64")
+    
     if old_path.exists():
         CLOUDFLARED_PATH = old_path
         return old_path
