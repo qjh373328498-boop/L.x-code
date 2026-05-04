@@ -9,6 +9,8 @@ import subprocess
 from pathlib import Path
 
 class Colors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
     OKCYAN = '\033[96m'
     OKGREEN = '\033[92m'
     WARNING = '\033[93m'
@@ -85,12 +87,17 @@ def launch_app(software):
     # 检查虚拟环境
     if not venv_python.exists():
         print(f"\n{Colors.FAIL}❌ 虚拟环境不存在{Colors.ENDC}")
-        print(f"请先运行：配置文件.py")
+        print(f"\n{Colors.WARNING}⚠️  请先运行配置：python 配置文件.py{Colors.ENDC}")
+        print(f"\n或者双击：{software['name']} 目录下的 一键启动.bat")
+        print(f"\n{Colors.OKCYAN}按回车键退出...{Colors.ENDC}")
+        input()
         return False
     
     # 检查 app.py
     if not app_path.exists():
         print(f"{Colors.FAIL}❌ 未找到 app.py{Colors.ENDC}")
+        print(f"\n{Colors.OKCYAN}按回车键退出...{Colors.ENDC}")
+        input()
         return False
     
     # 启动应用
@@ -112,6 +119,8 @@ def launch_app(software):
         return True
     except Exception as e:
         print(f"{Colors.FAIL}❌ 启动失败：{e}{Colors.ENDC}")
+        print(f"\n{Colors.OKCYAN}按回车键退出...{Colors.ENDC}")
+        input()
         return False
 
 def main():
@@ -120,19 +129,25 @@ def main():
     software = select_software()
     if not software:
         print(f"\n{Colors.OKCYAN}已退出{Colors.ENDC}")
+        input("按回车键关闭...")
         return
     
     if not software["initialized"]:
         print(f"\n{Colors.WARNING}⚠️  该软件尚未配置{Colors.ENDC}")
-        choice = input("是否立即配置？(y/n): ").strip().lower()
+        print(f"\n1. 运行配置：python 配置文件.py")
+        print(f"2. 或双击：{software['name']} 目录下的 一键启动.bat")
+        print(f"\n是否立即配置？")
+        choice = input("输入 y 配置，其他取消：").strip().lower()
         if choice == 'y':
             # 调用配置文件
             config_script = Path(__file__).parent / "配置文件.py"
             subprocess.run([sys.executable, str(config_script)])
-            return
+            print(f"\n配置完成后，请重新运行：python 启动.py")
         else:
             print(f"\n{Colors.OKCYAN}已取消{Colors.ENDC}")
-            return
+        
+        input("按回车键退出...")
+        return
     
     launch_app(software)
 
