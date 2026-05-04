@@ -215,7 +215,7 @@ def launch_app(software):
     app_path = software["path"] / "app.py"
     
     # 检查虚拟环境
-    if not venv_python.exists():
+    if not Path(venv_python).exists():
         print(f"\n{Colors.FAIL}❌ 虚拟环境不存在{Colors.ENDC}")
         print(f"\n{Colors.WARNING}⚠️  虚拟环境路径：{venv_python}{Colors.ENDC}")
         print(f"\n请按以下步骤操作：")
