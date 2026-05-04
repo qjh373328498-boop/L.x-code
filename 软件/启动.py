@@ -349,6 +349,14 @@ def launch_app(software):
 def main():
     print_header()
     
+    # 检查 Python 版本
+    print(f"{Colors.OKBLUE}Python 版本：{sys.version}{Colors.ENDC}\n")
+    
+    # 检查脚本所在目录
+    script_dir = Path(__file__).parent.resolve()
+    print(f"{Colors.OKBLUE}脚本目录：{script_dir}{Colors.ENDC}")
+    print(f"{Colors.OKBLUE}当前目录：{Path.cwd()}{Colors.ENDC}\n")
+    
     software = select_software()
     if not software:
         print(f"\n{Colors.OKCYAN}已退出{Colors.ENDC}")
@@ -384,6 +392,18 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print(f"\n{Colors.OKCYAN}程序已中断{Colors.ENDC}")
+        try:
+            input("按回车键退出...")
+        except:
+            pass
     except Exception as e:
-        print(f"{Colors.FAIL}异常：{e}{Colors.ENDC}")
+        print(f"\n{Colors.FAIL}❌ 异常：{e}{Colors.ENDC}")
+        print(f"\n{Colors.WARNING}详细信息:{Colors.ENDC}")
+        import traceback
+        traceback.print_exc()
+        print(f"\n按回车键退出...")
+        try:
+            input()
+        except:
+            pass
         sys.exit(1)
