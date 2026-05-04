@@ -6,6 +6,9 @@
 import os
 import sys
 import subprocess
+import time
+import socket
+import webbrowser
 from pathlib import Path
 
 class Colors:
@@ -56,7 +59,11 @@ def select_software():
     print(f"  0. 退出")
     print()
     
-    choice = input(f"{Colors.BOLD}请选择要启动的软件 (0-{len(software_list)}): {Colors.ENDC}").strip()
+    try:
+        choice = input(f"{Colors.BOLD}请选择要启动的软件 (0-{len(software_list)}): {Colors.ENDC}").strip()
+    except EOFError:
+        print(f"\n{Colors.OKBLUE}已退出{Colors.ENDC}")
+        return None
     
     if choice == "0":
         return None
@@ -90,40 +97,96 @@ def launch_app(software):
         print(f"\n{Colors.WARNING}⚠️  请先运行配置：python 配置文件.py{Colors.ENDC}")
         print(f"\n或者双击：{software['name']} 目录下的 一键启动.bat")
         print(f"\n{Colors.OKCYAN}按回车键退出...{Colors.ENDC}")
-        input()
+        try:
+            input()
+        except EOFError:
+            pass
         return False
     
     # 检查 app.py
     if not app_path.exists():
         print(f"{Colors.FAIL}❌ 未找到 app.py{Colors.ENDC}")
         print(f"\n{Colors.OKCYAN}按回车键退出...{Colors.ENDC}")
-        input()
+        try:
+            input()
+        except EOFError:
+            pass
         return False
     
     # 启动应用
-    print(f"\n{Colors.OKGREEN}  正在启动：{software['name']}{Colors.ENDC}")
-    print(f"  地址：http://localhost:8501")
-    print(f"  {Colors.OKCYAN}按 Ctrl+C 停止服务{Colors.ENDC}\n")
+    print(f"\n{Colors.OKGREEN}✓  正在启动：{software['name']}{Colors.ENDC}")
+    print(f"\n{Colors.OKBLUE}━━━ 访问方式（任选其一）━━━{Colors.ENDC}")
+    print(f"  {Colors.OKGREEN}[1] 本机访问{Colors.ENDC}      http://localhost:8501")
+    print(f"                     （仅限当前电脑使用）")
+    print(f"  {Colors.OKGREEN}[2] 局域网访问{Colors.ENDC}    http://192.168.x.x:8501")
+    print(f"                     （同一 WiFi 下的手机/平板可访问）")
+    print(f"  {Colors.OKGREEN}[3] 公网访问{Colors.ENDC}      http://x.x.x.x:8501")
+    print(f"                     （任何地方都能访问，需确保网络通畅）")
+    print(f"\n{Colors.OKCYAN}按 Ctrl+C 停止服务{Colors.ENDC}")
+    print(f"{Colors.OKBLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.ENDC}\n")
+    
+    # 获取本机 IP
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except:
+        local_ip = "192.168.x.x"
     
     try:
-        if os.name == 'nt':
-            cmd = f'"{venv_python}" "{app_path}"'
+        # 使用 streamlit run 启动
+        cmd = f'"{venv_python}" -m streamlit run "{app_path}" --server.headless true --server.address 0.0.0.0 --server.port 8501'
+        
+        # 后台启动 streamlit
+        subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        # 等待服务器启动
+        print("等待服务器启动...")
+        import time
+        time.sleep(5)
+        
+        # 让用户选择访问方式
+        print("\n请选择访问方式：")
+        print("  [1] 本机访问   （仅限当前电脑使用）")
+        print("  [2] 局域网访问 （同一 WiFi 下的手机/平板可访问）")
+        print("  [3] 公网访问   （任何地方都能访问）")
+        try:
+            choice = input("请输入选项 (1-3，默认 1): ").strip()
+        except EOFError:
+            choice = "1"
+        
+        if not choice:
+            choice = "1"
+        
+        # 打开浏览器
+        import webbrowser
+        if choice == "1":
+            url = "http://localhost:8501"
+            print(f"\n正在打开：{url}")
+        elif choice == "2":
+            url = f"http://{local_ip}:8501"
+            print(f"\n正在打开：{url}")
+        elif choice == "3":
+            url = "http://123.88.241.90:8501"
+            print(f"\n正在打开：{url}")
         else:
-            cmd = f'"{venv_python}" "{app_path}"'
+            url = "http://localhost:8501"
+            print(f"\n无效选项，默认打开：{url}")
         
-        # 直接运行，不捕获输出
-        subprocess.run(cmd, shell=True)
+        webbrowser.open(url)
         
-        print(f"\n{Colors.OKCYAN}应用已退出{Colors.ENDC}")
-        print(f"按回车键关闭...")
-        input()
-        return True
+        print(f"✓ 已打开浏览器")
+        print(f"\n按 Ctrl+C 停止服务\n")
         
-    except KeyboardInterrupt:
-        print(f"\n{Colors.OKCYAN}应用已停止{Colors.ENDC}")
-        print(f"按回车键关闭...")
-        input()
-        return True
+        # 等待用户中断
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print(f"\n{Colors.OKCYAN}应用已停止{Colors.ENDC}")
+            return True
     except Exception as e:
         print(f"\n{Colors.FAIL}❌ 启动失败：{e}{Colors.ENDC}")
         print(f"\n{Colors.WARNING}可能的原因:{Colors.ENDC}")
@@ -131,7 +194,10 @@ def launch_app(software):
         print(f"  2. 缺少依赖：进入软件目录运行 pip install -r requirements.txt")
         print(f"  3. 端口被占用：修改 app.py 中的端口号")
         print(f"\n按回车键关闭...")
-        input()
+        try:
+            input()
+        except EOFError:
+            pass
         return False
 
 def main():
@@ -140,7 +206,10 @@ def main():
     software = select_software()
     if not software:
         print(f"\n{Colors.OKCYAN}已退出{Colors.ENDC}")
-        input("按回车键关闭...")
+        try:
+            input("按回车键关闭...")
+        except EOFError:
+            pass
         return
     
     if not software["initialized"]:
@@ -157,7 +226,10 @@ def main():
         else:
             print(f"\n{Colors.OKCYAN}已取消{Colors.ENDC}")
         
-        input("按回车键退出...")
+        try:
+            input("按回车键退出...")
+        except EOFError:
+            pass
         return
     
     launch_app(software)
