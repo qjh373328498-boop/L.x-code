@@ -213,8 +213,11 @@ def launch_app(software):
     # 检查虚拟环境
     if not venv_python.exists():
         print(f"\n{Colors.FAIL}❌ 虚拟环境不存在{Colors.ENDC}")
-        print(f"\n{Colors.WARNING}⚠️  请先运行配置：python 配置文件.py{Colors.ENDC}")
-        print(f"\n或者双击：{software['name']} 目录下的 一键启动.bat")
+        print(f"\n{Colors.WARNING}⚠️  虚拟环境路径：{venv_python}{Colors.ENDC}")
+        print(f"\n请按以下步骤操作：")
+        print(f"  1. 打开该软件目录（如：一键财报分析）")
+        print(f"  2. 双击运行 一键启动.bat")
+        print(f"  3. 或命令行运行：python 配置文件.py")
         print(f"\n{Colors.OKCYAN}按回车键退出...{Colors.ENDC}")
         try:
             input()

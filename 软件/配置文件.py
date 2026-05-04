@@ -103,6 +103,8 @@ def setup_venv(software_path):
 
 def install_deps(software_path):
     """安装依赖"""
+    import shutil
+    
     requirements = software_path / "requirements.txt"
     
     if not requirements.exists():
@@ -116,19 +118,31 @@ def install_deps(software_path):
         pip_path = software_path / "venv" / "bin" / "pip"
     
     print(f"  {Colors.OKBLUE}正在安装依赖（使用清华镜像源）...{Colors.ENDC}")
-    print(f"  {Colors.OKCYAN}(显示进度条，请稍候...){Colors.ENDC}\n")
+    print(f"  {Colors.OKCYAN}(共约 50 个包，安装需要 2-5 分钟){Colors.ENDC}")
+    print(f"  {Colors.OKCYAN}提示：首次安装需要下载，之后会使用缓存秒装{Colors.ENDC}\n")
     
-    # 使用 shell=True 显示进度条
+    # 获取包数量用于显示进度
+    with open(requirements, 'r', encoding='utf-8') as f:
+        total_packages = len([line for line in f if line.strip() and not line.startswith('#')])
+    
+    # Windows 使用绝对路径
     if os.name == 'nt':
-        cmd = f'"{pip_path}" install -r "{requirements}" -i https://pypi.tuna.tsinghua.edu.cn/simple'
+        pip_exe = str(pip_path.resolve())
+        req_file = str(requirements.resolve())
+        cmd = f'"{pip_exe}" install -r "{req_file}" -i https://pypi.tuna.tsinghua.edu.cn/simple'
     else:
         cmd = f'"{pip_path}" install -r "{requirements}" -i https://pypi.tuna.tsinghua.edu.cn/simple'
     
+    # 设置环境变量强制显示进度条
+    env = os.environ.copy()
+    env['PIP_PROGRESS_BAR'] = 'on'
+    env['PYTHONUNBUFFERED'] = '1'
+    
     try:
-        # 不捕获输出，让 pip 直接显示进度条
-        result = subprocess.run(cmd, shell=True)
+        # 实时显示 pip 输出
+        result = subprocess.run(cmd, shell=True, env=env)
         if result.returncode == 0:
-            print(f"\n  {Colors.OKGREEN}✅ 依赖安装完成{Colors.ENDC}")
+            print(f"\n  {Colors.OKGREEN}✅ 依赖安装完成 (共 {total_packages} 个包){Colors.ENDC}")
         else:
             print(f"\n  {Colors.WARNING}⚠️  安装完成但有警告{Colors.ENDC}")
         return True
@@ -141,7 +155,16 @@ def download_cloudflared():
     """下载 Cloudflare Tunnel 工具（持久化存储）"""
     # 下载到软件目录，避免重启丢失
     software_dir = Path(__file__).parent
-    cloudflared_path = software_dir / ".cloudflared" / "cloudflared-linux-amd64"
+    cloudflared_dir = software_dir / ".cloudflared"
+    cloudflared_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 根据操作系统选择版本
+    if os.name == 'nt':  # Windows
+        cloudflared_path = cloudflared_dir / "cloudflared.exe"
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
+    else:  # Linux/Mac
+        cloudflared_path = cloudflared_dir / "cloudflared"
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
     
     if cloudflared_path.exists():
         print(f"  {Colors.OKCYAN}ℹ️  Cloudflare Tunnel 工具已存在，跳过下载{Colors.ENDC}")
@@ -153,7 +176,6 @@ def download_cloudflared():
     print(f"  {Colors.OKBLUE}正在下载 Cloudflare Tunnel 工具...{Colors.ENDC}")
     try:
         import urllib.request
-        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
         
         # 创建目录
         cloudflared_path.parent.mkdir(parents=True, exist_ok=True)
@@ -166,11 +188,15 @@ def download_cloudflared():
                 print(f"  下载进度：{percent:.1f}%", end='\r')
         
         urllib.request.urlretrieve(url, cloudflared_path, reporthook)
-        os.chmod(cloudflared_path, 0o755)
-        print(f"  {Colors.OKGREEN}✅ Cloudflare Tunnel 工具下载完成 (已保存到 .cloudflared/ 目录){Colors.ENDC}\n")
+        
+        # Windows 不需要 chmod
+        if os.name != 'nt':
+            os.chmod(cloudflared_path, 0o755)
+        
+        print(f"  {Colors.OKGREEN}✅ Cloudflare Tunnel 工具下载完成{Colors.ENDC}")
+        print(f"  {Colors.OKCYAN}  路径：{cloudflared_path}{Colors.ENDC}\n")
         
         # 更新全局路径
-        global CLOUDFLARED_PATH
         CLOUDFLARED_PATH = cloudflared_path
         return True
     except Exception as e:
