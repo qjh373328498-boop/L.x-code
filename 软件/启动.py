@@ -91,24 +91,10 @@ def get_cloudflared_path():
     """获取 cloudflared 路径"""
     return Path("/tmp/cloudflared-linux-amd64")
 
-def check_cloudflared():
-    """检查并下载 cloudflared"""
+def check_cloudflared_installed():
+    """检查 cloudflared 是否已安装"""
     cloudflared_path = get_cloudflared_path()
-    
-    if cloudflared_path.exists():
-        return True
-    
-    print(f"\n{Colors.OKBLUE}正在下载 Cloudflare Tunnel 工具...{Colors.ENDC}")
-    try:
-        import urllib.request
-        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
-        urllib.request.urlretrieve(url, cloudflared_path)
-        os.chmod(cloudflared_path, 0o755)
-        print(f"{Colors.OKGREEN}✓ 下载完成{Colors.ENDC}")
-        return True
-    except Exception as e:
-        print(f"{Colors.FAIL}❌ 下载失败：{e}{Colors.ENDC}")
-        return False
+    return cloudflared_path.exists()
 
 def start_tunnel(port=8501):
     """启动 Cloudflare Tunnel 并返回公网地址"""
@@ -258,7 +244,7 @@ def launch_app(software):
         # 处理选择
         if choice == "3":
             # 公网访问 - 启动 Cloudflare Tunnel
-            if check_cloudflared():
+            if check_cloudflared_installed():
                 public_url = start_tunnel(8501)
                 if public_url:
                     time.sleep(2)  # 等待 Cloudflare 生效
@@ -267,9 +253,12 @@ def launch_app(software):
                 else:
                     print(f"\n{Colors.WARNING}⚠️  公网访问启动失败，降级为本机访问{Colors.ENDC}")
                     webbrowser.open("http://localhost:8501")
+                    print(f"{Colors.OKCYAN}提示：请先运行 python 配置文件.py 安装 Cloudflare Tunnel 工具{Colors.ENDC}")
             else:
-                print(f"\n{Colors.WARNING}⚠️  降级为本机访问{Colors.ENDC}")
+                print(f"\n{Colors.WARNING}⚠️  未找到 Cloudflare Tunnel 工具{Colors.ENDC}")
+                print(f"{Colors.OKCYAN}正在启动本机访问...\n{Colors.ENDC}")
                 webbrowser.open("http://localhost:8501")
+                print(f"{Colors.FAIL}提示：请运行 python 配置文件.py 下载公网访问工具，然后选择 [3] 公网访问{Colors.ENDC}")
         
         elif choice == "2":
             # 局域网访问

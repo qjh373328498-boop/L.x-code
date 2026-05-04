@@ -133,6 +133,36 @@ def install_deps(software_path):
         print(f"  {Colors.WARNING}⚠️  安装警告：{e}{Colors.ENDC}")
         return True
 
+
+def download_cloudflared():
+    """下载 Cloudflare Tunnel 工具"""
+    cloudflared_path = Path("/tmp/cloudflared-linux-amd64")
+    
+    if cloudflared_path.exists():
+        print(f"  {Colors.OKCYAN}ℹ️  Cloudflare Tunnel 工具已存在，跳过下载{Colors.ENDC}")
+        return True
+    
+    print(f"  {Colors.OKBLUE}正在下载 Cloudflare Tunnel 工具...{Colors.ENDC}")
+    try:
+        import urllib.request
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
+        
+        # 显示下载进度
+        def reporthook(blocknum, blocksize, totalsize):
+            readsofar = blocknum * blocksize
+            if totalsize > 0:
+                percent = readsofar * 100 / totalsize
+                print(f"  下载进度：{percent:.1f}%", end='\r')
+        
+        urllib.request.urlretrieve(url, cloudflared_path, reporthook)
+        os.chmod(cloudflared_path, 0o755)
+        print(f"  {Colors.OKGREEN}✅ Cloudflare Tunnel 工具下载完成{Colors.ENDC}\n")
+        return True
+    except Exception as e:
+        print(f"  {Colors.WARNING}⚠️  下载失败：{e}{Colors.ENDC}")
+        print(f"  {Colors.OKCYAN}提示：下次运行启动脚本时会自动下载{Colors.ENDC}\n")
+        return True
+
 def mark_initialized(software_path):
     """标记已初始化"""
     marker_file = software_path / ".initialized"
@@ -165,7 +195,10 @@ def main():
     # 4. 安装依赖
     install_deps(software["path"])
     
-    # 5. 标记已初始化
+    # 5. 下载 Cloudflare Tunnel 工具（用于公网访问）
+    download_cloudflared()
+    
+    # 6. 标记已初始化
     mark_initialized(software["path"])
     
     print(f"\n{Colors.OKGREEN}{'=' * 60}{Colors.ENDC}")
