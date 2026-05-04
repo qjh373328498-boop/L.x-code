@@ -10,22 +10,66 @@ from typing import Dict, Any
 
 def parse_excel(filepath: str) -> Dict[str, pd.DataFrame]:
     """解析 Excel 格式财报"""
-    # 读取所有 sheet
-    excel_file = pd.ExcelFile(filepath)
-    sheets = excel_file.sheet_names
+    result = {
+        "balance_sheet": {},
+        "income_stmt": {},
+        "cash_flow": {}
+    }
     
-    result = {}
-    
-    for sheet in sheets:
-        df = pd.read_excel(filepath, sheet_name=sheet)
-        sheet_lower = sheet.lower()
+    try:
+        # 读取所有 sheet
+        excel_file = pd.ExcelFile(filepath, engine='openpyxl')
+        sheets = excel_file.sheet_names
         
-        if any(k in sheet_lower for k in ["资产", "balance"]):
-            result["balance_sheet"] = process_statement(df, "balance")
-        elif any(k in sheet_lower for k in ["利润", "income", "损益"]):
-            result["income_stmt"] = process_statement(df, "income")
-        elif any(k in sheet_lower for k in ["现金流", "cash"]):
-            result["cash_flow"] = process_statement(df, "cash")
+        for sheet in sheets:
+            try:
+                df = pd.read_excel(filepath, sheet_name=sheet, engine='openpyxl')
+                sheet_lower = sheet.lower()
+                
+                if any(k in sheet_lower for k in ["资产", "balance"]):
+                    result["balance_sheet"] = process_statement(df, "balance")
+                elif any(k in sheet_lower for k in ["利润", "income", "损益"]):
+                    result["income_stmt"] = process_statement(df, "income")
+                elif any(k in sheet_lower for k in ["现金流", "cash"]):
+                    result["cash_flow"] = process_statement(df, "cash")
+            except Exception as e:
+                print(f"读取 Sheet '{sheet}' 失败：{e}")
+                continue
+    except Exception as e:
+        print(f"读取 Excel 文件失败：{e}")
+        # 尝试作为单 sheet 文件读取
+        try:
+            df = pd.read_excel(filepath, engine='openpyxl')
+            result = flatten_parse(df)
+        except:
+            pass
+    
+    return result
+
+
+def flatten_parse(df: pd.DataFrame) -> Dict[str, Dict[str, float]]:
+    """解析扁平化 Excel（单 sheet）"""
+    result = {
+        "balance_sheet": {},
+        "income_stmt": {},
+        "cash_flow": {}
+    }
+    
+    # 尝试从第一列和第二列提取
+    if len(df.columns) >= 2:
+        for _, row in df.iterrows():
+            try:
+                name = str(row.iloc[0])
+                value = float(row.iloc[1])
+                
+                if any(k in name for k in ["资产", "负债", "权益"]):
+                    result["balance_sheet"][name] = value
+                elif any(k in name for k in ["收入", "成本", "利润"]):
+                    result["income_stmt"][name] = value
+                elif "现金流" in name:
+                    result["cash_flow"][name] = value
+            except:
+                continue
     
     return result
 

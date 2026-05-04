@@ -48,6 +48,9 @@ if 'industry' not in st.session_state:
 st.sidebar.title("📊 一键财报分析")
 st.sidebar.markdown("---")
 
+# 检查是否有上传文件
+has_file = st.session_state.uploaded_file is not None
+
 menu = st.sidebar.radio(
     "导航",
     [
@@ -61,7 +64,7 @@ menu = st.sidebar.radio(
         "📉 成长性分析",
         "⚠️ 风险预警",
         "📋 诊断报告",
-    ],
+    ] if has_file else ["🏠 首页", "📁 财报上传"],
     index=0
 )
 
