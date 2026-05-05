@@ -453,6 +453,177 @@ def show_voucher():
                 if not entries.empty:
                     st.dataframe(entries, use_container_width=True)
 
+def show_arap():
+    st.title("💰 应收应付管理")
+    tab1, tab2, tab3 = st.tabs(["应收账款", "应付账款", "账龄分析"])
+    
+    with tab1:
+        st.subheader("应收账款管理")
+        col1, col2 = st.columns(2)
+        with col1:
+            customer = st.text_input("客户名称", key="ar_customer")
+            amount = st.number_input("应收金额", min_value=0.01, key="ar_amount")
+            ar_date = st.date_input("应收日期", value=datetime.now(), key="ar_date")
+        with col2:
+            due_date = st.date_input("到期日期", value=datetime.now() + timedelta(days=30), key="ar_due")
+            ar_summary = st.text_input("摘要", key="ar_summary")
+        if st.button("添加应收账款", key="add_ar", type="primary"):
+            if customer and amount:
+                conn = get_connection()
+                conn.execute("INSERT INTO ar_ap (type, counterparty, amount, date, due_date, summary, status) VALUES ('AR', ?, ?, ?, ?, ?, 'pending')",
+                    (customer, amount, ar_date.strftime('%Y-%m-%d'), due_date.strftime('%Y-%m-%d'), ar_summary))
+                conn.commit()
+                conn.close()
+                st.success("添加成功")
+                st.rerun()
+        conn = get_connection()
+        ar_df = pd.read_sql_query("SELECT * FROM ar_ap WHERE type='AR' ORDER BY date DESC", conn)
+        conn.close()
+        if not ar_df.empty:
+            st.dataframe(ar_df, use_container_width=True)
+            st.metric("应收账款总额", f"¥{ar_df['amount'].sum():,.2f}")
+    
+    with tab2:
+        st.subheader("应付账款管理")
+        col1, col2 = st.columns(2)
+        with col1:
+            supplier = st.text_input("供应商名称", key="ap_supplier")
+            amount = st.number_input("应付金额", min_value=0.01, key="ap_amount")
+            ap_date = st.date_input("应付日期", value=datetime.now(), key="ap_date")
+        with col2:
+            due_date = st.date_input("到期日期", value=datetime.now() + timedelta(days=30), key="ap_due")
+            ap_summary = st.text_input("摘要", key="ap_summary")
+        if st.button("添加应付账款", key="add_ap", type="primary"):
+            if supplier and amount:
+                conn = get_connection()
+                conn.execute("INSERT INTO ar_ap (type, counterparty, amount, date, due_date, summary, status) VALUES ('AP', ?, ?, ?, ?, ?, 'pending')",
+                    (supplier, amount, ap_date.strftime('%Y-%m-%d'), due_date.strftime('%Y-%m-%d'), ap_summary))
+                conn.commit()
+                conn.close()
+                st.success("添加成功")
+                st.rerun()
+        conn = get_connection()
+        ap_df = pd.read_sql_query("SELECT * FROM ar_ap WHERE type='AP' ORDER BY date DESC", conn)
+        conn.close()
+        if not ap_df.empty:
+            st.dataframe(ap_df, use_container_width=True)
+            st.metric("应付账款总额", f"¥{ap_df['amount'].sum():,.2f}")
+    
+    with tab3:
+        st.subheader("账龄分析")
+        st.info("💡 请在「应收账款」标签页添加应收账款数据后，再查看账龄分析")
+        conn = get_connection()
+        ar_df = pd.read_sql_query("SELECT * FROM ar_ap WHERE type='AR'", conn)
+        conn.close()
+        if not ar_df.empty:
+            today = datetime.now()
+            def age_category(due_date_str):
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+                days_overdue = (today - due_date).days
+                if days_overdue < 0: return '未到期'
+                elif days_overdue <= 30: return '1-30 天'
+                elif days_overdue <= 60: return '31-60 天'
+                elif days_overdue <= 90: return '61-90 天'
+                else: return '90 天以上'
+            ar_df['账龄'] = ar_df['due_date'].apply(age_category)
+            age_summary = ar_df.groupby('账龄')['amount'].sum().reindex(['未到期', '1-30 天', '31-60 天', '61-90 天', '90 天以上'], fill_value=0)
+            col1, col2 = st.columns(2)
+            col1.write("### 应收账款账龄")
+            col1.dataframe(age_summary)
+            st.metric("应收账款总额", f"¥{ar_df['amount'].sum():,.2f}")
+            try:
+                import plotly.express as px
+                fig = px.pie(values=age_summary.values, names=age_summary.index, title="应收账款账龄分布")
+                col2.plotly_chart(fig, use_container_width=True)
+            except: pass
+        else:
+            st.warning("暂无应收账款数据，账龄分析表将显示为空")
+
+def show_tax():
+    st.title("📑 纳税申报")
+    tab1, tab2, tab3 = st.tabs(["增值税", "企业所得税", "个税"])
+    
+    with tab1:
+        st.subheader("增值税计算")
+        col1, col2 = st.columns(2)
+        with col1:
+            sales = st.number_input("不含税销售额", min_value=0.0, step=1000.0, key="sales")
+            purchase = st.number_input("不含税采购额", min_value=0.0, step=1000.0, key="purchase")
+            tax_rate = st.selectbox("税率", [0.13, 0.09, 0.06, 0.03], key="tax_rate", format_func=lambda x: f"{x*100:.0f}%")
+        with col2:
+            output_tax = sales * tax_rate
+            input_tax = purchase * tax_rate
+            payable_tax = output_tax - input_tax
+            st.metric("销项税额", f"¥{output_tax:,.2f}")
+            st.metric("进项税额", f"¥{input_tax:,.2f}")
+            st.metric("应纳增值税", f"¥{max(0, payable_tax):,.2f}")
+        if payable_tax < 0:
+            st.info(f"留抵税额：¥{abs(payable_tax):,.2f}")
+    
+    with tab2:
+        st.subheader("企业所得税计算")
+        col1, col2 = st.columns(2)
+        with col1:
+            revenue = st.number_input("营业收入", min_value=0.0, step=10000.0, key="erp_rev")
+            cogs = st.number_input("营业成本", min_value=0.0, step=10000.0, key="erp_cogs")
+            operating_expenses = st.number_input("期间费用", min_value=0.0, step=10000.0, key="erp_exp")
+            other_income = st.number_input("其他收益", min_value=0.0, step=10000.0, key="erp_other_inc")
+            other_expenses = st.number_input("其他支出", min_value=0.0, step=10000.0, key="erp_other_exp")
+        with col2:
+            profit_before_tax = revenue - cogs - operating_expenses + other_income - other_expenses
+            tax_adjustments = st.number_input("纳税调整金额", value=0.0, step=10000.0, key="tax_adj")
+            taxable_income = max(0, profit_before_tax + tax_adjustments)
+            is_small = st.checkbox("小型微利企业", value=False, key="is_small")
+            if is_small:
+                tax_rate = 0.025 if taxable_income <= 1000000 else 0.05 if taxable_income <= 3000000 else 0.25
+                tax_desc = "2.5%" if taxable_income <= 1000000 else "5%" if taxable_income <= 3000000 else "25%"
+            else:
+                tax_rate = 0.25
+                tax_desc = "25%"
+            income_tax = taxable_income * tax_rate
+            st.metric("利润总额", f"¥{profit_before_tax:,.2f}")
+            st.metric("应纳税所得额", f"¥{taxable_income:,.2f}")
+            st.metric(f"应纳所得税 ({tax_desc})", f"¥{income_tax:,.2f}")
+    
+    with tab3:
+        st.subheader("个人所得税计算")
+        monthly_salary = st.number_input("月工资", min_value=0.0, step=1000.0, key="tax_salary")
+        social_security = st.number_input("社保公积金个人部分", min_value=0.0, step=100.0, key="tax_social")
+        special_deduction = st.number_input("专项附加扣除", min_value=0.0, step=100.0, key="tax_special")
+        other_deduction = st.number_input("其他扣除", min_value=0.0, step=100.0, key="tax_other")
+        threshold = 5000
+        taxable_income = monthly_salary - social_security - threshold - special_deduction - other_deduction
+        if taxable_income <= 0:
+            tax = 0
+            tax_rate_display = "0%"
+        elif taxable_income <= 3000:
+            tax = taxable_income * 0.03
+            tax_rate_display = "3%"
+        elif taxable_income <= 12000:
+            tax = taxable_income * 0.1 - 210
+            tax_rate_display = "10%"
+        elif taxable_income <= 25000:
+            tax = taxable_income * 0.2 - 1410
+            tax_rate_display = "20%"
+        elif taxable_income <= 35000:
+            tax = taxable_income * 0.25 - 2660
+            tax_rate_display = "25%"
+        elif taxable_income <= 55000:
+            tax = taxable_income * 0.3 - 4410
+            tax_rate_display = "30%"
+        elif taxable_income <= 80000:
+            tax = taxable_income * 0.35 - 7160
+            tax_rate_display = "35%"
+        else:
+            tax = taxable_income * 0.45 - 15160
+            tax_rate_display = "45%"
+        col1, col2, col3 = st.columns(3)
+        col1.metric("应纳税所得额", f"¥{max(0, taxable_income):,.2f}")
+        col2.metric("适用税率", tax_rate_display)
+        col3.metric("应纳个税", f"¥{tax:,.2f}")
+        net_salary = monthly_salary - social_security - tax
+        st.metric("税后工资", f"¥{net_salary:,.2f}")
+
 def show_balance():
     st.title("📋 科目余额表")
     tab1, tab2 = st.tabs(["余额查询", "科目设置"])
@@ -464,17 +635,17 @@ def show_balance():
         with col2:
             subject_filter = st.text_input("科目筛选", key="bal_filter")
         conn = get_connection()
-        query = """SELECT ve.subject_code, ve.subject_name,
-                   SUM(CASE WHEN ve.entry_type = '借方' THEN ve.amount ELSE 0 END) as debit_total,
-                   SUM(CASE WHEN ve.entry_type = '贷方' THEN ve.amount ELSE 0 END) as credit_total,
+        query = """SELECT ve.subject_code AS code, ve.subject_name AS name,
+                   SUM(CASE WHEN ve.entry_type = '借方' THEN ve.amount ELSE 0 END) AS debit,
+                   SUM(CASE WHEN ve.entry_type = '贷方' THEN ve.amount ELSE 0 END) AS credit,
                    (SUM(CASE WHEN ve.entry_type = '借方' THEN ve.amount ELSE 0 END) - 
-                    SUM(CASE WHEN ve.entry_type = '贷方' THEN ve.amount ELSE 0 END)) as balance
+                    SUM(CASE WHEN ve.entry_type = '贷方' THEN ve.amount ELSE 0 END)) AS balance
                    FROM voucher_entry ve GROUP BY ve.subject_code, ve.subject_name ORDER BY ve.subject_code"""
         df = pd.read_sql_query(query, conn)
-        conn.close()
-        if subject_filter:
-            df = df[(df['科目代码'].astype(str).str.contains(subject_filter)) | (df['科目名称'].str.contains(subject_filter))]
         if not df.empty:
+            df.rename(columns={'code': '科目代码', 'name': '科目名称', 'debit': '借方发生额', 'credit': '贷方发生额', 'balance': '余额'}, inplace=True)
+            if subject_filter:
+                df = df[(df['科目代码'].astype(str).str.contains(subject_filter)) | (df['科目名称'].str.contains(subject_filter))]
             st.dataframe(df, use_container_width=True)
             total_debit = df['借方发生额'].sum()
             total_credit = df['贷方发生额'].sum()
@@ -491,10 +662,347 @@ def show_balance():
             except: pass
         else:
             st.info("暂无数据，请先录入凭证")
+        conn.close()
     with tab2:
         st.subheader("预设会计科目")
-        subjects = [{'code': '1001', 'name': '库存现金', 'type': '资产'}, {'code': '1002', 'name': '银行存款', 'type': '资产'}, {'code': '1122', 'name': '应收账款', 'type': '资产'}, {'code': '1221', 'name': '其他应收款', 'type': '资产'}, {'code': '1405', 'name': '库存商品', 'type': '资产'}, {'code': '1601', 'name': '固定资产', 'type': '资产'}, {'code': '2001', 'name': '短期借款', 'type': '负债'}, {'code': '2202', 'name': '应付账款', 'type': '负债'}, {'code': '2211', 'name': '应付职工薪酬', 'type': '负债'}, {'code': '2221', 'name': '应交税费', 'type': '负债'}, {'code': '3001', 'name': '实收资本', 'type': '权益'}, {'code': '4001', 'name': '生产成本', 'type': '成本'}, {'code': '5001', 'name': '制造费用', 'type': '成本'}, {'code': '6001', 'name': '主营业务收入', 'type': '损益'}, {'code': '6401', 'name': '主营业务成本', 'type': '损益'}, {'code': '6601', 'name': '销售费用', 'type': '损益'}, {'code': '6602', 'name': '管理费用', 'type': '损益'}, {'code': '6603', 'name': '财务费用', 'type': '损益'}]
+        subjects = [{'code': '1001', 'name': '库存现金', 'type': '资产'}, {'code': '1002', 'name': '银行存款', 'type': '资产'}, {'code': '1122', 'name': '应收账款', 'type': '资产'}, {'code': '2202', 'name': '应付账款', 'type': '负债'}, {'code': '6001', 'name': '主营业务收入', 'type': '损益'}, {'code': '6602', 'name': '管理费用', 'type': '损益'}]
         st.dataframe(pd.DataFrame(subjects), use_container_width=True, hide_index=True)
+
+def show_ratios():
+    st.title("📊 财务比率分析")
+    tab1, tab2 = st.tabs(["数据录入", "比率分析"])
+    with tab1:
+        st.subheader("录入财务数据")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            period = st.text_input("期间", placeholder="2024-12", key="fm_period")
+            current_assets = st.number_input("流动资产", value=0.0, key="fm_current_assets")
+            total_assets = st.number_input("资产总计", value=0.0, key="fm_total_assets")
+        with col2:
+            current_liabilities = st.number_input("流动负债", value=0.0, key="fm_current_liab")
+            total_liabilities = st.number_input("负债总计", value=0.0, key="fm_total_liab")
+            equity = st.number_input("所有者权益", value=0.0, key="fm_equity")
+        with col3:
+            revenue = st.number_input("营业收入", value=0.0, key="fm_revenue")
+            net_profit = st.number_input("净利润", value=0.0, key="fm_net_profit")
+            cogs = st.number_input("营业成本", value=0.0, key="fm_cogs")
+            inventory = st.number_input("存货", value=0.0, key="fm_inventory")
+        if st.button("保存数据", type="primary", key="save_fm_data"):
+            if period and total_assets > 0:
+                conn = get_connection()
+                metrics = [('流动资产', current_assets), ('资产总计', total_assets), ('流动负债', current_liabilities), ('负债总计', total_liabilities), ('所有者权益', equity), ('营业收入', revenue), ('净利润', net_profit), ('营业成本', cogs), ('存货', inventory)]
+                for m_name, m_val in metrics:
+                    conn.execute("INSERT OR REPLACE INTO financial_metrics (period, metric_name, value, unit) VALUES (?, ?, ?, ?)", (period, m_name, m_val, '元'))
+                conn.commit()
+                conn.close()
+                st.success("数据保存成功")
+    with tab2:
+        conn = get_connection()
+        df_all = pd.read_sql_query("SELECT * FROM financial_metrics ORDER BY period DESC", conn)
+        conn.close()
+        if df_all.empty:
+            st.info("暂无数据")
+        else:
+            latest_period = df_all['period'].max()
+            df = df_all[df_all['period'] == latest_period]
+            m = dict(zip(df['metric_name'], df['value']))
+            current_assets = m.get('流动资产', 0); current_liabilities = m.get('流动负债', 0)
+            total_assets = m.get('资产总计', 0); total_liabilities = m.get('负债总计', 0)
+            equity = m.get('所有者权益', 0); revenue = m.get('营业收入', 0)
+            net_profit = m.get('净利润', 0); cogs = m.get('营业成本', 0)
+            inventory = m.get('存货', 0)
+            current_ratio = current_assets / current_liabilities if current_liabilities > 0 else 0
+            quick_ratio = (current_assets - inventory) / current_liabilities if current_liabilities > 0 else 0
+            debt_ratio = total_liabilities / total_assets * 100 if total_assets > 0 else 0
+            gross_margin = (revenue - cogs) / revenue * 100 if revenue > 0 else 0
+            net_margin = net_profit / revenue * 100 if revenue > 0 else 0
+            roe = net_profit / equity * 100 if equity > 0 else 0
+            st.subheader("💧 偿债能力")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("流动比率", f"{current_ratio:.2f}", "标准值：2.0")
+            col2.metric("速动比率", f"{quick_ratio:.2f}", "标准值：1.0")
+            col3.metric("资产负债率", f"{debt_ratio:.1f}%", "标准值：<60%")
+            st.divider()
+            st.subheader("💰 盈利能力")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("毛利率", f"{gross_margin:.1f}%")
+            col2.metric("净利率", f"{net_margin:.1f}%")
+            col3.metric("ROE", f"{roe:.1f}%")
+
+def show_dupont():
+    st.title("🏛️ 杜邦分析")
+    conn = get_connection()
+    revenue_data = pd.read_sql_query("SELECT SUM(amount) as total FROM invoice", conn).iloc[0, 0] or 0
+    try:
+        total_cost = pd.read_sql_query("SELECT SUM(ve.amount) FROM voucher_entry ve WHERE ve.entry_type='借方' AND ve.subject_code LIKE '64%'", conn).iloc[0, 0] or 0
+    except: total_cost = 0
+    ar_total = pd.read_sql_query("SELECT SUM(amount) FROM ar_ap WHERE type='AR'", conn).iloc[0, 0] or 0
+    conn.close()
+    gross_profit = revenue_data - total_cost
+    gross_margin = (gross_profit / revenue_data * 100) if revenue_data > 0 else 0
+    st.subheader("关键经营指标")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("经营收入", f"¥{revenue_data:,.2f}")
+    col2.metric("毛利润", f"¥{gross_profit:,.2f}", f"毛利率 {gross_margin:.1f}%")
+    col3.metric("应收账款", f"¥{ar_total:,.2f}")
+    st.divider()
+    st.subheader("🔍 杜邦分析")
+    if revenue_data > 0:
+        roe = (gross_profit / revenue_data) * (revenue_data / (ar_total + total_cost)) * 100 if (ar_total + total_cost) > 0 else 0
+        st.info(f"**净利润率**: {gross_margin:.2f}% | **ROE**: {roe:.2f}%")
+
+def show_industry():
+    st.title("🏭 行业对标")
+    industries = ["制造业", "信息技术", "批发零售", "餐饮服务", "建筑业", "交通运输", "房地产业", "金融业"]
+    selected_industry = st.selectbox("选择所属行业", industries, key="ind_sel")
+    st.subheader("企业财务数据")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("**盈利能力**")
+        company_gross_margin = st.number_input("毛利率 (%)", min_value=0.0, value=30.0, step=0.1, key="ind_gm")
+        company_net_margin = st.number_input("净利润率 (%)", min_value=0.0, value=10.0, step=0.1, key="ind_nm")
+        company_roe = st.number_input("净资产收益率 (%)", min_value=0.0, value=15.0, step=0.1, key="ind_roe")
+    with col2:
+        st.markdown("**偿债能力**")
+        company_current_ratio = st.number_input("流动比率", min_value=0.0, value=2.0, step=0.1, key="ind_cr")
+        company_quick_ratio = st.number_input("速动比率", min_value=0.0, value=1.5, step=0.1, key="ind_qr")
+        company_debt_ratio = st.number_input("资产负债率 (%)", min_value=0.0, value=50.0, step=0.1, key="ind_dr")
+    with col3:
+        st.markdown("**营运能力**")
+        company_ar_turnover = st.number_input("应收账款周转率 (次)", min_value=0.0, value=6.0, step=0.1, key="ind_art")
+        company_inv_turnover = st.number_input("存货周转率 (次)", min_value=0.0, value=8.0, step=0.1, key="ind_inv")
+    if st.button("开始对比分析", type="primary", key="ind_compare"):
+        industry_avg = {'制造业': {'毛利率': 25.0, '净利率': 8.0, 'ROE': 12.0, '流动比率': 1.8, '速动比率': 1.0, '资产负债率': 50.0}, '信息技术': {'毛利率': 45.0, '净利率': 18.0, 'ROE': 20.0, '流动比率': 2.5, '速动比率': 2.0, '资产负债率': 35.0}}.get(selected_industry, {'毛利率': 25.0, '净利率': 8.0, 'ROE': 12.0, '流动比率': 1.8, '速动比率': 1.0, '资产负债率': 50.0})
+        st.subheader("📊 对比结果")
+        metrics = ['毛利率', '净利率', 'ROE', '流动比率', '速动比率', '资产负债率']
+        company_vals = [company_gross_margin, company_net_margin, company_roe, company_current_ratio, company_quick_ratio, company_debt_ratio]
+        industry_vals = [industry_avg['毛利率'], industry_avg['净利率'], industry_avg['ROE'], industry_avg['流动比率'], industry_avg['速动比率'], industry_avg['资产负债率']]
+        import plotly.graph_objects as go
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name='行业平均', x=metrics, y=industry_vals, marker_color='lightblue'))
+        fig.add_trace(go.Bar(name='本公司', x=metrics, y=company_vals, marker_color='steelblue'))
+        fig.update_layout(barmode='group', height=500, showlegend=True)
+        st.plotly_chart(fig, use_container_width=True)
+
+def show_cashflow():
+    st.title("💵 资金诊断")
+    tab1, tab2 = st.tabs(["数据录入", "资金分析"])
+    with tab1:
+        col1, col2 = st.columns(2)
+        with col1:
+            period = st.text_input("期间", placeholder="2024-01", key="cf_period")
+            opening_cash = st.number_input("期初货币资金", value=0.0, key="cf_opening")
+            closing_cash = st.number_input("期末货币资金", value=0.0, key="cf_closing")
+            avg_receivables = st.number_input("平均应收账款", value=0.0, key="cf_ar")
+        with col2:
+            revenue = st.number_input("营业收入", value=0.0, key="cf_rev")
+            cogs = st.number_input("营业成本", value=0.0, key="cf_cogs")
+            ocf = st.number_input("经营活动现金流净额", value=0.0, key="cf_ocf")
+        if st.button("保存数据", type="primary", key="cf_save"):
+            if period:
+                conn = get_connection()
+                for m_name, m_val in [('期初货币资金', opening_cash), ('期末货币资金', closing_cash), ('平均应收账款', avg_receivables), ('营业收入', revenue), ('经营现金流', ocf)]:
+                    conn.execute("INSERT OR REPLACE INTO financial_metrics (period, metric_name, value, unit) VALUES (?, ?, ?, ?)", (period, m_name, m_val, '元'))
+                conn.commit()
+                conn.close()
+                st.success("数据保存成功")
+    with tab2:
+        conn = get_connection()
+        df = pd.read_sql_query("SELECT * FROM financial_metrics WHERE period=(SELECT MAX(period) FROM financial_metrics)", conn)
+        conn.close()
+        if df.empty: st.info("暂无数据")
+        else:
+            m = dict(zip(df['metric_name'], df['value']))
+            closing = m.get('期末货币资金', 0); avg_ar = m.get('平均应收账款', 0)
+            revenue = m.get('营业收入', 0); ocf = m.get('经营现金流', 0)
+            ar_turnover = revenue / avg_ar if avg_ar > 0 else 0
+            ar_days = 365 / ar_turnover if ar_turnover > 0 else 0
+            col1, col2, col3 = st.columns(3)
+            col1.metric("货币资金", f"¥{closing:,.0f}")
+            col2.metric("应收账款周转天数", f"{ar_days:.0f} 天")
+            col3.metric("经营现金流", f"¥{ocf:,.0f}", delta="正" if ocf > 0 else "负", delta_color="inverse")
+
+def show_budget():
+    st.title("📈 预算分析")
+    tab1, tab2 = st.tabs(["预算录入", "执行分析"])
+    with tab1:
+        col1, col2 = st.columns(2)
+        with col1:
+            period = st.text_input("期间", placeholder="2024-01", key="bud_period")
+            budget_revenue = st.number_input("预算收入", value=0.0, key="bud_rev")
+            budget_cost = st.number_input("预算成本", value=0.0, key="bud_cost")
+        with col2:
+            actual_revenue = st.number_input("实际收入", value=0.0, key="act_rev")
+            actual_cost = st.number_input("实际成本", value=0.0, key="act_cost")
+        if st.button("保存预算数据", type="primary", key="bud_save"):
+            if period:
+                conn = get_connection()
+                for m_name, m_val in [('预算收入', budget_revenue), ('预算成本', budget_cost), ('实际收入', actual_revenue), ('实际成本', actual_cost)]:
+                    conn.execute("INSERT OR REPLACE INTO financial_metrics (period, metric_name, value, unit) VALUES (?, ?, ?, ?)", (period, m_name, m_val, '元'))
+                conn.commit()
+                conn.close()
+                st.success("保存成功")
+    with tab2:
+        conn = get_connection()
+        df = pd.read_sql_query("SELECT * FROM financial_metrics WHERE period=(SELECT MAX(period) FROM financial_metrics)", conn)
+        conn.close()
+        if df.empty: st.info("暂无数据")
+        else:
+            m = dict(zip(df['metric_name'], df['value']))
+            bud_rev = m.get('预算收入', 0); act_rev = m.get('实际收入', 0)
+            bud_cost = m.get('预算成本', 0); act_cost = m.get('实际成本', 0)
+            rev_var = ((act_rev - bud_rev) / bud_rev * 100) if bud_rev > 0 else 0
+            cost_var = ((act_cost - bud_cost) / bud_cost * 100) if bud_cost > 0 else 0
+            col1, col2 = st.columns(2)
+            col1.metric("收入执行", f"¥{act_rev:,.0f}", f"预算：¥{bud_rev:,.0f} ({rev_var:+.1f}%)")
+            col2.metric("成本执行", f"¥{act_cost:,.0f}", f"预算：¥{bud_cost:,.0f} ({cost_var:+.1f}%)", delta_color="inverse")
+
+def show_finance_calc():
+    st.title("🧮 金融测算")
+    calc_type = st.selectbox("计算类型", ["直线折旧", "IRR 计算", "NPV 计算", "年金计算"], key="fc_type")
+    if calc_type == "直线折旧":
+        col1, col2, col3 = st.columns(3)
+        with col1: cost = st.number_input("原值", value=10000.0, key="fd_cost")
+        with col2: salvage = st.number_input("残值", value=1000.0, key="fd_salvage")
+        with col3: life = st.number_input("使用年限", value=5, key="fd_life")
+        if st.button("计算", key="fd_calc"):
+            annual = (cost - salvage) / life
+            st.metric("年折旧额", f"¥{annual:,.2f}")
+            st.info(f"总折旧额：¥{cost - salvage:,.2f} | 月折旧额：¥{annual/12:,.2f}")
+    elif calc_type == "IRR 计算":
+        cashflows_str = st.text_input("现金流 (逗号分隔)", value="-10000, 3000, 4000, 5000, 6000", key="irr_cf")
+        if st.button("计算", key="irr_calc"):
+            try:
+                cashflows = [float(x.strip()) for x in cashflows_str.split(',')]
+                import numpy as np
+                irr = np.irr(cashflows)
+                st.metric("IRR", f"{irr*100:.2f}%")
+            except Exception as e: st.error(f"计算失败：{e}")
+    elif calc_type == "NPV 计算":
+        col1, col2 = st.columns(2)
+        with col1: rate = st.number_input("折现率 (%)", value=10.0, key="npv_rate")
+        with col2: cashflows_str = st.text_input("现金流 (逗号分隔)", value="-10000, 3000, 4000, 5000", key="npv_cf")
+        if st.button("计算", key="npv_calc"):
+            try:
+                cashflows = [float(x.strip()) for x in cashflows_str.split(',')]
+                import numpy as np
+                npv = np.npv(rate/100, cashflows)
+                st.metric("NPV", f"¥{npv:,.2f}")
+            except Exception as e: st.error(f"计算失败：{e}")
+    elif calc_type == "年金计算":
+        col1, col2, col3 = st.columns(3)
+        with col1: rate = st.number_input("年利率 (%)", value=5.0, key="pmt_rate")
+        with col2: nper = st.number_input("期数", value=10, key="pmt_nper")
+        with col3: pv = st.number_input("现值", value=100000.0, key="pmt_pv")
+        if st.button("计算", key="pmt_calc"):
+            try:
+                import numpy as np
+                pmt = np.pmt(rate/100, nper, pv)
+                st.metric("每期支付额", f"¥{abs(pmt):,.2f}")
+            except Exception as e: st.error(f"计算失败：{e}")
+
+def show_cvp():
+    st.title("📊 本量利分析")
+    st.sidebar.header("输入参数")
+    fixed_cost = st.sidebar.number_input("固定成本 (元)", value=100000.0, step=1000.0, key="cvp_fc")
+    unit_price = st.sidebar.number_input("单价 (元)", value=100.0, step=1.0, key="cvp_price")
+    unit_vc = st.sidebar.number_input("单位变动成本 (元)", value=60.0, step=1.0, key="cvp_vc")
+    sales_vol = st.sidebar.number_input("预计销量 (件)", value=5000, step=100, key="cvp_vol")
+    cm = unit_price - unit_vc
+    be_vol = fixed_cost / cm if cm > 0 else 0
+    be_rev = be_vol * unit_price
+    st.subheader("📊 核心指标")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("单位边际贡献", f"¥{cm:,.2f}")
+    col2.metric("边际贡献率", f"{cm/unit_price*100:.1f}%")
+    col3.metric("盈亏平衡点 (销量)", f"{be_vol:.0f} 件")
+    col4.metric("盈亏平衡点 (金额)", f"¥{be_rev:,.2f}")
+    import plotly.graph_objects as go
+    volumes = list(range(0, int(sales_vol * 1.5), max(100, int(sales_vol // 10))))
+    revenue = [v * unit_price for v in volumes]
+    total_cost = [fixed_cost + v * unit_vc for v in volumes]
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=volumes, y=revenue, name='销售收入'))
+    fig.add_trace(go.Scatter(x=volumes, y=total_cost, name='总成本'))
+    fig.add_vline(x=be_vol, line_dash="dash", annotation_text="盈亏平衡点")
+    fig.update_layout(height=500, hovermode='x unified')
+    st.plotly_chart(fig, use_container_width=True)
+
+def show_tools():
+    st.title("🧰 快捷工具箱")
+    tool = st.selectbox("选择工具", ["🧮 快速计算器", "📊 批量对比", "⏱️ 计时器", "📝 备忘录"])
+    if tool == "🧮 快速计算器":
+        calc_type = st.selectbox("计算类型", ["加减乘除", "百分比计算", "税额计算"])
+        if calc_type == "加减乘除":
+            col1, col2, col3 = st.columns(3)
+            with col1: num1 = st.number_input("数字 1", value=0.0, key="calc_n1")
+            with col2: num2 = st.number_input("数字 2", value=0.0, key="calc_n2")
+            with col3:
+                op = st.selectbox("运算符", ["+", "-", "×", "÷"], key="calc_op")
+                if st.button("=", key="calc_eq"):
+                    if op == "+": result = num1 + num2
+                    elif op == "-": result = num1 - num2
+                    elif op == "×": result = num1 * num2
+                    elif op == "÷": result = num1 / num2 if num2 != 0 else "错误：除数为 0"
+                    st.metric("结果", result)
+    elif tool == "📊 批量对比":
+        data = st.text_area("输入数据（每行一组，逗号分隔）", placeholder="2024 年，1000,200\n2025 年，1200,250")
+        if data:
+            lines = [line.split(',') for line in data.strip().split('\n')]
+            st.dataframe(pd.DataFrame(lines), use_container_width=True)
+    elif tool == "⏱️ 计时器":
+        mins = st.number_input("分钟", min_value=0, max_value=60, value=5)
+        if st.button("▶️ 开始倒计时"):
+            total_secs = mins * 60
+            prog = st.progress(0)
+            txt = st.empty()
+            for i in range(total_secs, 0, -1):
+                m, s = divmod(i, 60)
+                txt.text(f"剩余：{m:02d}:{s:02d}")
+                prog.progress(1 - i / total_secs)
+                import time
+                time.sleep(1)
+            txt.text("⏰ 时间到！")
+            st.balloons()
+
+def show_enhanced():
+    st.title("🚀 增强功能")
+    tab1, tab2, tab3 = st.tabs(["数据导出", "数据导入", "备份恢复"])
+    tables = {'invoice': '发票数据', 'bank_statement': '银行流水', 'voucher': '凭证', 'ar_ap': '应收应付', 'calendar_event': '日历事件'}
+    with tab1:
+        sel = st.selectbox("选择要导出的表", list(tables.keys()), format_func=lambda x: tables[x], key="exp_sel")
+        if st.button("导出 Excel", key="exp_btn"):
+            conn = get_connection()
+            df = pd.read_sql_query(f"SELECT * FROM {sel}", conn)
+            conn.close()
+            if not df.empty:
+                from io import BytesIO
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as w: df.to_excel(w, index=False)
+                st.download_button(label=f"📥 下载 {tables[sel]}.xlsx", data=output.getvalue(), file_name=f"{sel}_{datetime.now().strftime('%Y%m%d')}.xlsx")
+    with tab2:
+        f = st.file_uploader("上传 Excel", type=['xlsx', 'xls'], key="imp_file")
+        tgt = st.selectbox("导入到表", list(tables.keys()), format_func=lambda x: tables[x], key="imp_tgt")
+        if f and st.button("开始导入", key="imp_btn"):
+            try:
+                df = pd.read_excel(f)
+                conn = get_connection()
+                df.to_sql(tgt, conn, if_exists='append', index=False)
+                conn.close()
+                st.success(f"导入成功，共 {len(df)} 条记录")
+            except Exception as e: st.error(f"导入失败：{e}")
+    with tab3:
+        st.subheader("备份全部数据")
+        if st.button("备份", key="bak_btn"):
+            conn = get_connection()
+            backup = {}
+            for t in tables.keys():
+                backup[t] = pd.read_sql_query(f"SELECT * FROM {t}", conn).to_dict('records')
+            conn.close()
+            import json
+            from io import BytesIO
+            bak_json = json.dumps(backup, ensure_ascii=False, default=str)
+            st.download_button(label="📥 下载备份", data=bak_json, file_name=f"backup_{datetime.now().strftime('%Y%m%d')}.json", mime="application/json")
 
 def show_pivot():
     st.title("🎯 智能透视分析")
