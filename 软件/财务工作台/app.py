@@ -273,6 +273,11 @@ def show_dashboard():
 
 def main():
     """主函数"""
+    # 初始化数据库和索引
+    from utils.database import init_db, create_indexes
+    init_db()
+    create_indexes()  # 创建数据库索引，优化查询性能
+    
     # 主题切换
     theme_switcher()
     

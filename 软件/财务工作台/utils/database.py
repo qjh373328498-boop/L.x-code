@@ -23,7 +23,7 @@ def get_connection():
 
 
 def init_db():
-    """初始化数据库表"""
+    """初始化数据库表和索引"""
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -299,9 +299,60 @@ def clear_all_data(confirm: bool = False) -> bool:
     return True
 
 
+def create_indexes():
+    """创建数据库索引，优化查询性能"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    indexes = [
+        # 发票表索引
+        "CREATE INDEX IF NOT EXISTS idx_invoice_code ON invoice(code)",
+        "CREATE INDEX IF NOT EXISTS idx_invoice_number ON invoice(number)",
+        "CREATE INDEX IF NOT EXISTS idx_invoice_date ON invoice(date DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_invoice_supplier ON invoice(supplier)",
+        "CREATE INDEX IF NOT EXISTS idx_invoice_buyer ON invoice(buyer)",
+        
+        # 凭证表索引
+        "CREATE INDEX IF NOT EXISTS idx_voucher_date ON voucher_entry(date DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_voucher_type ON voucher_entry(type)",
+        
+        # 应收应付索引
+        "CREATE INDEX IF NOT EXISTS idx_ar_ap_date ON ar_ap(due_date)",
+        "CREATE INDEX IF NOT EXISTS idx_ar_ap_type ON ar_ap(type)",
+        "CREATE INDEX IF NOT EXISTS idx_ar_ap_status ON ar_ap(status)",
+        
+        # 财务指标索引
+        "CREATE INDEX IF NOT EXISTS idx_metrics_period ON financial_metrics(period DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_category ON financial_metrics(category)",
+        
+        # 日历事件索引
+        "CREATE INDEX IF NOT EXISTS idx_calendar_date ON calendar_event(event_date)",
+        
+        # 银行对账索引
+        "CREATE INDEX IF NOT EXISTS idx_bank_date ON bank_statement(statement_date DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_bank_amount ON bank_statement(amount)",
+    ]
+    
+    created_count = 0
+    for sql in indexes:
+        try:
+            cursor.execute(sql)
+            created_count += 1
+        except Exception:
+            pass  # 表不存在或索引已存在
+    
+    conn.commit()
+    conn.close()
+    return created_count
+
+
 if __name__ == "__main__":
     init_db()
     print("✅ 数据库初始化完成")
+    
+    # 创建索引
+    index_count = create_indexes()
+    print(f"📁 创建 {index_count} 个数据库索引")
     
     # 显示统计
     stats = get_dashboard_stats()

@@ -3,6 +3,7 @@ address = "0.0.0.0"
 port = 8502
 enableCORS = true
 enableXsrfProtection = true
+headless = true
 
 [browser]
 gatherUsageStats = false
@@ -13,3 +14,11 @@ backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F0F2F6"
 textColor = "#262730"
 font = "sans serif"
+
+[runner]
+# 启用魔术命令缓存
+magicEnabled = true
+
+# 禁用不需要的功能
+fastReruns = true
+maxCachedMessageSize = 10

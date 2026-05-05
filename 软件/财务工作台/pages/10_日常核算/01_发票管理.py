@@ -1,8 +1,9 @@
 """
-📄 发票管家 - 发票录入、查询、认证管理
+📄 发票管家 - 发票录入、查询、认证管理（性能优化版）
 """
 import streamlit as st
 import pandas as pd
+import sqlite3
 
 # ========== 性能优化 ==========
 # Session State: 保存用户输入
@@ -11,6 +12,7 @@ if '_session_init' not in st.session_state:
 
 from datetime import datetime
 from utils.database import get_connection, init_db
+from utils.query_optimizer import get_paginated_data, render_pagination
 
 st.set_page_config(page_title="发票管家", page_icon="📄", layout="wide")
 init_db()
@@ -24,18 +26,18 @@ with tab1:
     
     col1, col2 = st.columns(2)
     with col1:
-        code = st.text_input("发票代码", placeholder="10 位或 12 位数字")
-        number = st.text_input("发票号码", placeholder="8 位数字")
+        code = st.text_input("发票代码", placeholder="10 位或 12 位数字", key="invoice_code")
+        number = st.text_input("发票号码", placeholder="8 位数字", key="invoice_number")
         date = st.date_input("开票日期", value=datetime.now(), key="invoice_date")
-        amount = st.number_input("金额", min_value=0.0, step=0.01)
+        amount = st.number_input("金额", min_value=0.0, step=0.01, key="invoice_amount")
     
     with col2:
-        inv_type = st.selectbox("发票类型", ["专用发票", "普通发票", "电子发票"])
-        supplier = st.text_input("销售方")
-        buyer = st.text_input("购买方")
-        status = st.selectbox("认证状态", ["未认证", "已认证", "已退票"])
+        inv_type = st.selectbox("发票类型", ["专用发票", "普通发票", "电子发票"], key="invoice_type")
+        supplier = st.text_input("销售方", key="invoice_supplier")
+        buyer = st.text_input("购买方", key="invoice_buyer")
+        status = st.selectbox("认证状态", ["未认证", "已认证", "已退票"], key="invoice_status")
     
-    if st.button("保存发票", type="primary"):
+    if st.button("保存发票", type="primary", key="save_invoice"):
         if code and number and amount:
             conn = get_connection()
             cursor = conn.cursor()
@@ -47,6 +49,9 @@ with tab1:
                 )
                 conn.commit()
                 st.success("发票保存成功！")
+                # 清除缓存，强制刷新
+                if 'invoice_page_cache' in st.session_state:
+                    del st.session_state.invoice_page_cache
             except sqlite3.IntegrityError:
                 st.error("该发票已存在！")
             finally:
@@ -57,52 +62,109 @@ with tab1:
 with tab2:
     st.subheader("发票查询")
     
-    search_code = st.text_input("搜索发票代码或号码")
+    # ========== 性能优化：懒加载 + 分页 ==========
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        search_code = st.text_input("搜索发票代码或号码", key="invoice_search")
+    with col2:
+        page_size = st.selectbox("每页显示", [20, 50, 100], index=1, key="invoice_page_size")
     
-    conn = get_connection()
+    # 分页参数
+    if 'invoice_page' not in st.session_state:
+        st.session_state.invoice_page = 1
+    
+    # 构建查询条件
+    where_clause = ""
+    params = ()
     if search_code:
-        df = pd.read_sql_query(
-            """SELECT * FROM invoice WHERE code LIKE ? OR number LIKE ? ORDER BY date DESC""",
-            conn,
-            params=(f'%{search_code}%', f'%{search_code}%')
-        )
-    else:
-        df = pd.read_sql_query("SELECT * FROM invoice ORDER BY date DESC", conn)
-    conn.close()
+        where_clause = "(code LIKE ? OR number LIKE ?)"
+        params = (f'%{search_code}%', f'%{search_code}%')
     
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
-        st.metric("发票总数", len(df))
-    else:
-        st.info("暂无发票数据")
+    # 获取分页数据
+    total_pages = 1
+    try:
+        invoice_data, total_records = get_paginated_data(
+            table="invoice",
+            page=st.session_state.invoice_page,
+            page_size=page_size,
+            where_clause=where_clause,
+            params=params,
+            order_by="date DESC"
+        )
+        
+        total_pages = (total_records + page_size - 1) // page_size if total_records > 0 else 1
+        
+        if invoice_data:
+            df = pd.DataFrame(invoice_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            
+            # 分页控件
+            render_pagination(total_records, st.session_state.invoice_page, page_size)
+            
+            # 页码切换
+            page_key = f"page_select_{page_size}"
+            if page_key in st.session_state:
+                new_page = st.session_state[page_key]
+                if new_page != st.session_state.invoice_page:
+                    st.session_state.invoice_page = new_page
+                    st.rerun()
+            
+            st.metric("发票总数", total_records)
+        else:
+            st.info("暂无发票数据")
+    
+    except Exception as e:
+        st.error(f"查询失败：{e}")
+        # 降级：直接查询（不推荐）
+        conn = get_connection()
+        if search_code:
+            df = pd.read_sql_query(
+                """SELECT * FROM invoice WHERE code LIKE ? OR number LIKE ? ORDER BY date DESC""",
+                conn,
+                params=(f'%{search_code}%', f'%{search_code}%')
+            )
+        else:
+            df = pd.read_sql_query("SELECT * FROM invoice ORDER BY date DESC", conn)
+        conn.close()
+        if not df.empty:
+            st.warning("数据量较大，已自动限制显示前 100 条")
+            st.dataframe(df.head(100), use_container_width=True)
 
 with tab3:
     st.subheader("批量导入发票")
     
-    uploaded_file = st.file_uploader("上传 Excel 文件", type=['xlsx', 'xls'])
+    uploaded_file = st.file_uploader("上传 Excel 文件", type=['xlsx', 'xls'], key="invoice_upload")
     
     if uploaded_file:
-        df_upload = pd.read_excel(uploaded_file)
-        st.write(f"预览数据：{len(df_upload)} 行")
-        st.dataframe(df_upload.head())
+        from utils.query_optimizer import batch_insert
         
-        if st.button("确认导入"):
-            conn = get_connection()
-            cursor = conn.cursor()
-            count = 0
-            for _, row in df_upload.iterrows():
-                try:
-                    cursor.execute(
-                        """INSERT OR IGNORE INTO invoice (code, number, date, amount, type, supplier, buyer, status)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (str(row.get('code', '')), str(row.get('number', '')),
-                         row.get('date', datetime.now().strftime('%Y-%m-%d')),
-                         float(row.get('amount', 0)), row.get('type', '普通发票'),
-                         row.get('supplier', ''), row.get('buyer', ''), row.get('status', '未认证'))
-                    )
-                    count += 1
-                except:
-                    pass
-            conn.commit()
-            conn.close()
-            st.success(f"成功导入 {count} 条发票记录")
+        try:
+            df_upload = pd.read_excel(uploaded_file)
+            st.write(f"预览数据：{len(df_upload)} 行")
+            st.dataframe(df_upload.head(), use_container_width=True)
+            
+            if st.button("确认导入", key="confirm_import"):
+                # 准备批量插入数据
+                columns = ['code', 'number', 'date', 'amount', 'type', 'supplier', 'buyer', 'status']
+                data = []
+                for _, row in df_upload.iterrows():
+                    data.append((
+                        str(row.get('code', '')),
+                        str(row.get('number', '')),
+                        row.get('date', datetime.now().strftime('%Y-%m-%d')),
+                        float(row.get('amount', 0)),
+                        row.get('type', '普通发票'),
+                        row.get('supplier', ''),
+                        row.get('buyer', ''),
+                        row.get('status', '未认证')
+                    ))
+                
+                with st.spinner("正在导入数据..."):
+                    count = batch_insert('invoice', columns, data, batch_size=500)
+                
+                st.success(f"成功导入 {count} 条发票记录")
+                # 清除缓存
+                if 'invoice_page_cache' in st.session_state:
+                    del st.session_state.invoice_page_cache
+        except Exception as e:
+            st.error(f"导入失败：{e}")
