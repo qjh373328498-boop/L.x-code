@@ -92,6 +92,10 @@ def logout():
 
 def main():
     """主函数"""
+    # 主题切换
+    from utils.theme_switcher import theme_switcher
+    theme_switcher()
+    
     # 未登录状态
     if not st.session_state.authenticated:
         login()
