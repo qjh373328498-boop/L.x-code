@@ -14,10 +14,9 @@ DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "finance.db"
 
 
-@st.cache_resource
 def get_connection():
-    """获取数据库连接（资源缓存）"""
-    conn = sqlite3.connect(DB_PATH)
+    """获取数据库连接（每次创建新连接，避免多线程问题）"""
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
