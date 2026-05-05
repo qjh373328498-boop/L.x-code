@@ -60,13 +60,13 @@ st.info("""
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("🗑️ 清除数据缓存", use_container_width=True):
+    if st.button("🗑️ 清除数据缓存", use_container_width=True, key="clear_data_cache"):
         clear_cache('data')
         st.success("数据缓存已清除！")
         st.rerun()
 
 with col2:
-    if st.button("🗑️ 清除所有缓存", use_container_width=True):
+    if st.button("🗑️ 清除所有缓存", use_container_width=True, key="clear_all_cache"):
         clear_cache('all')
         st.success("所有缓存已清除！")
         st.rerun()
