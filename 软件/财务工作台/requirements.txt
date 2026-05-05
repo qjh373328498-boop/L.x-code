@@ -1,14 +1,29 @@
+# 财务工作台 v2.0 依赖清单
+# pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 核心框架
 streamlit==1.31.0
+
+# 数据处理
 pandas==2.1.4
 numpy==1.26.3
+numpy-financial==1.0.0
+
+# Excel 支持
 openpyxl==3.1.2
 xlsxwriter==3.1.9
+
+# PDF 处理
 pdfplumber==0.10.3
+PyMuPDF==1.23.8
 Pillow==10.2.0
+
+# 数据匹配
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.23.0
+
+# 其他工具
 requests==2.31.0
 lxml==5.1.0
 pyperclip==1.8.2
-numpy-financial==1.0.0
-fuzzywuzzy==0.18.0
-PyMuPDF==1.23.8
 psutil==5.9.7

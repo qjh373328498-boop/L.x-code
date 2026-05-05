@@ -4,6 +4,8 @@ port = 8502
 enableCORS = true
 enableXsrfProtection = true
 headless = true
+maxUploadSize = 200
+maxMessageSize = 200
 
 [browser]
 gatherUsageStats = false
@@ -19,5 +21,8 @@ font = "sans serif"
 # 启用魔术命令缓存
 magicEnabled = true
 
-# 禁用不需要的功能
+# 启用快速重运行
 fastReruns = true
+
+# 启用文件监视器
+fileWatcherType = "auto"
