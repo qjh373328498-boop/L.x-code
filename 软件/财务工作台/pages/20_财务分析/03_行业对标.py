@@ -1,6 +1,8 @@
 """
 财务工作台 - 行业对标页面
 使用 2025-2026 年权威行业数据进行对比分析
+
+性能优化：行业数据查询缓存（24 小时）
 """
 import streamlit as st
 import plotly.graph_objects as go
@@ -11,6 +13,14 @@ from utils.industry_2025 import INDUSTRY_STANDARDS, INDUSTRY_KEYWORDS
 st.set_page_config(page_title="行业对标", page_icon="🏭", layout="wide")
 
 st.title("🏭 行业对标分析")
+
+# ========== 性能优化：行业数据缓存 ==========
+@st.cache_data(ttl=86400)  # 24 小时缓存
+def get_industry_data_cached(industry_name: str):
+    """获取行业数据（带缓存）"""
+    if industry_name in INDUSTRY_STANDARDS:
+        return INDUSTRY_STANDARDS[industry_name]
+    return None
 
 st.markdown("""
 **功能说明**：选择所属行业，系统将企业财务指标与行业平均水平对比
@@ -57,7 +67,12 @@ st.markdown("---")
 
 # 对比分析
 if st.button("开始对比分析", type="primary"):
-    industry = INDUSTRY_STANDARDS[selected_industry]
+    # 性能优化：使用缓存获取行业数据
+    industry = get_industry_data_cached(selected_industry)
+    
+    if not industry:
+        st.error(f"未找到 {selected_industry} 的行业数据")
+        st.stop()
     
     # 指标对比（使用五档评价）
     st.subheader("📊 指标对比")

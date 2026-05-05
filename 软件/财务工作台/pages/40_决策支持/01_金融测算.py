@@ -1,5 +1,7 @@
 """
 FinCopilot - 金融测算页面
+
+性能优化：金融计算结果缓存
 """
 import streamlit as st
 from core.calculator import (
@@ -13,6 +15,27 @@ from core.calculator import (
 st.set_page_config(page_title="金融测算", page_icon="🧮", layout="wide")
 
 st.title("🧮 金融测算")
+
+# ========== 性能优化：计算结果缓存 ==========
+@st.cache_data
+def calculate_depreciation_cached(cost: float, salvage: float, life: int):
+    """直线折旧计算（带缓存）"""
+    return straight_line_depreciation(cost, salvage, life)
+
+@st.cache_data
+def calculate_irr_cached(values: tuple):
+    """IRR 计算（带缓存）"""
+    return calculate_irr(list(values))
+
+@st.cache_data
+def calculate_npv_cached(rate: float, values: tuple):
+    """NPV 计算（带缓存）"""
+    return calculate_npv(rate, list(values))
+
+@st.cache_data
+def calculate_pmt_cached(rate: float, nper: int, pv: float, fv: float = 0):
+    """年金计算（带缓存）"""
+    return calculate_pmt(rate, nper, pv, fv)
 
 calc_type = st.selectbox(
     "选择计算类型",
@@ -39,7 +62,8 @@ if calc_type == "直线折旧":
         life = st.number_input("使用年限", min_value=1, step=1, value=5)
     
     if st.button("计算"):
-        result = straight_line_depreciation(cost, salvage, life)
+        # 使用缓存计算
+        result = calculate_depreciation_cached(float(cost), float(salvage), int(life))
         
         st.metric("年折旧额", f"¥{result['annual_depreciation']:,.2f}")
         st.metric("总折旧额", f"¥{result['total_depreciation']:,.2f}")

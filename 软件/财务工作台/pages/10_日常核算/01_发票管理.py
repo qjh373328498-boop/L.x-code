@@ -19,6 +19,16 @@ init_db()
 
 st.title("📄 发票管家")
 
+# ========== 性能优化：缓存发票数据查询 ==========
+@st.cache_data(ttl=300)  # 5 分钟缓存
+def get_invoices_cached(where_clause: str = "", params: tuple = ()):
+    """获取发票数据（带缓存）"""
+    conn = get_connection()
+    query = f"SELECT * FROM invoice {where_clause} ORDER BY date DESC"
+    df = pd.read_sql_query(query, conn, params=params)
+    conn.close()
+    return df
+
 tab1, tab2, tab3 = st.tabs(["录入发票", "发票查询", "批量导入"])
 
 with tab1:
@@ -77,24 +87,29 @@ with tab2:
     where_clause = ""
     params = ()
     if search_code:
-        where_clause = "(code LIKE ? OR number LIKE ?)"
+        where_clause = "WHERE (code LIKE ? OR number LIKE ?)"
         params = (f'%{search_code}%', f'%{search_code}%')
     
-    # 获取分页数据
-    total_pages = 1
+    # 性能优化：使用缓存查询数据
     try:
-        invoice_data, total_records = get_paginated_data(
-            table="invoice",
-            page=st.session_state.invoice_page,
-            page_size=page_size,
-            where_clause=where_clause,
-            params=params,
-            order_by="date DESC"
-        )
+        # 先获取总记录数
+        conn = get_connection()
+        count_query = f"SELECT COUNT(*) FROM invoice {where_clause}"
+        total_records = conn.execute(count_query, params).fetchone()[0]
         
-        total_pages = (total_records + page_size - 1) // page_size if total_records > 0 else 1
+        # 获取完整数据集（使用缓存）
+        if where_clause:
+            invoice_df = get_invoices_cached(where_clause, params)
+        else:
+            invoice_df = get_invoices_cached()
         
-        if invoice_data:
+        conn.close()
+        
+        # 在内存中进行分页
+        if not invoice_df.empty:
+            start_idx = (st.session_state.invoice_page - 1) * page_size
+            end_idx = start_idx + page_size
+            invoice_data = invoice_df.iloc[start_idx:end_idx].to_dict('records')
             df = pd.DataFrame(invoice_data)
             st.dataframe(df, use_container_width=True, hide_index=True)
             
