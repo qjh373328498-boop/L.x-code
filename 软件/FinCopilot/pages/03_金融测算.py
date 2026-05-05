@@ -51,6 +51,40 @@ if calc_type == "直线折旧":
         df['depreciation'] = df['depreciation'].apply(lambda x: f"¥{x:,.2f}")
         df['book_value'] = df['book_value'].apply(lambda x: f"¥{x:,.2f}")
         st.dataframe(df, use_container_width=True)
+        
+        # 导出功能
+        csv = df.to_csv(index=False, encoding='utf-8-sig')
+        st.download_button(
+            label="📥 导出为 CSV",
+            data=csv,
+            file_name="直线折旧计划表.csv",
+            mime='text/csv'
+        )
+        
+        # 图表展示
+        st.markdown("### 📈 折旧趋势图")
+        import plotly.graph_objects as go
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=result['schedule']['year'],
+            y=[s['depreciation'] for s in result['schedule']],
+            mode='lines+markers',
+            name='年折旧额'
+        ))
+        fig.add_trace(go.Scatter(
+            x=result['schedule']['year'],
+            y=[s['book_value'] for s in result['schedule']],
+            mode='lines+markers',
+            name='账面价值'
+        ))
+        fig.update_layout(
+            title='折旧趋势图',
+            xaxis_title='年份',
+            yaxis_title='金额',
+            hovermode='x unified'
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 # 双倍余额递减法
 elif calc_type == "双倍余额递减法":

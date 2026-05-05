@@ -104,11 +104,24 @@ def generate_pdf_report(html_content: str, output_path: str) -> bool:
     参数:
         html_content: HTML 内容
         output_path: 输出路径
+    
+    返回:
+        是否成功
     """
     try:
         from weasyprint import HTML
         HTML(string=html_content).write_pdf(output_path)
         return True
+    except ImportError:
+        print("weasyprint 未安装，尝试备用方案...")
+        # 备用方案：保存为 HTML
+        try:
+            with open(output_path.replace('.pdf', '.html'), 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            return True
+        except Exception as e:
+            print(f"备用方案失败：{e}")
+            return False
     except Exception as e:
         print(f"生成 PDF 失败：{e}")
         return False

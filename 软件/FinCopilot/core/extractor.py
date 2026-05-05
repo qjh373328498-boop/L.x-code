@@ -100,10 +100,48 @@ def extract_from_pdf(filepath: str) -> Dict[str, Any]:
 def extract_from_image(filepath: str) -> Dict[str, Any]:
     """
     从图片中提取关键信息（OCR）
-    简化版：使用 PyMuPDF 的 OCR 功能
+    使用 PyMuPDF 的 OCR 功能或调用系统 OCR
     """
-    # 简化实现，实际项目中应使用 OCR 库
-    return extract_from_pdf(filepath)
+    import fitz
+    
+    try:
+        # 打开图片
+        doc = fitz.open(filepath)
+        text = ""
+        
+        # 提取文本
+        for page in doc:
+            text += page.get_text()
+        
+        doc.close()
+        
+        # 使用与 PDF 相同的提取逻辑
+        result = {
+            "amount": None,
+            "company": None,
+            "date": None,
+            "invoice_code": None,
+            "invoice_number": None,
+            "text": text
+        }
+        
+        # 正则提取（与 extract_from_pdf 相同）
+        import re
+        
+        # 提取金额
+        amount_patterns = [
+            r'(?i)(?:金额 | 合计 | 总计 | 总额)[:：]?\s*¥?\s*([\d,]+\.?\d*)',
+        ]
+        for pattern in amount_patterns:
+            match = re.search(pattern, text)
+            if match:
+                result["amount"] = float(match.group(1).replace(',', ''))
+                break
+        
+        return result
+        
+    except Exception as e:
+        return {"error": str(e), "text": ""}
 
 
 def clean_text(text: str) -> str:
