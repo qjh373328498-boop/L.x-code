@@ -10,12 +10,12 @@ import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from utils.database import get_connection
-from utils.page_helper import init_page
+# init_page disabled
 from utils.formatters import format_currency
 
-from utils.page_helper import init_page
+# init_page disabled
 
-init_page("资金诊断", "💰")
+# init_page disabled
 
 st.title("💰 资金诊断")
 

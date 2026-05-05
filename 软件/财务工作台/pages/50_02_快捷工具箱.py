@@ -5,9 +5,9 @@ FinCopilot - 快捷工具箱
 import streamlit as st
 from datetime import datetime, timedelta
 
-from utils.page_helper import init_page
+# init_page disabled
 
-init_page("快捷工具箱", "🧰")
+# init_page disabled
 
 st.title("🧰 快捷工具箱")
 

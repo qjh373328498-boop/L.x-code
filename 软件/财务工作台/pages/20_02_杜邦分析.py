@@ -11,7 +11,7 @@ from datetime import datetime
 # 添加父目录到路径，以便导入 utils 模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.database import get_connection
-from utils.page_helper import init_page
+# init_page disabled
 from utils.formatters import format_currency
 
 # ========== 性能优化：Session State ==========
@@ -36,9 +36,9 @@ def create_comparison_chart(categories, values):
     return fig
 
 
-from utils.page_helper import init_page
+# init_page disabled
 
-init_page("高级业务分析", "📈")
+# init_page disabled
 
 st.title("📈 高级业务分析 - 经营决策支持")
 

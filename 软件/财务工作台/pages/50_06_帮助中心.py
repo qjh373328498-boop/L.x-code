@@ -4,9 +4,9 @@
 """
 import streamlit as st
 
-from utils.page_helper import init_page
+# init_page disabled
 
-init_page("帮助中心", "❓")
+# init_page disabled
 
 st.title("❓ 帮助中心")
 

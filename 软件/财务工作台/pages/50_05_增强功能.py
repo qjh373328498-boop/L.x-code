@@ -9,12 +9,12 @@ from io import BytesIO
 import json
 import plotly.express as px
 from utils.database import get_connection
-from utils.page_helper import init_page, get_dashboard_stats
+# init_page disabled, get_dashboard_stats
 from utils.formatters import format_currency
 
-from utils.page_helper import init_page
+# init_page disabled
 
-init_page("增强功能", "🚀")
+# init_page disabled
 
 st.title("🚀 增强功能")
 

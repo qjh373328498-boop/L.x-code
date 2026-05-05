@@ -9,12 +9,12 @@ import pandas as pd
 
 from datetime import datetime, timedelta
 from utils.database import get_connection
-from utils.page_helper import init_page
+# init_page disabled
 from utils.formatters import format_currency
 
-from utils.page_helper import init_page
+# init_page disabled
 
-init_page("应收应付管理", "💳")
+# init_page disabled
 
 st.title("💳 应收应付管理")
 

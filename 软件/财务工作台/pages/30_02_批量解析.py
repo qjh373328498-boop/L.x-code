@@ -8,9 +8,9 @@ import tempfile
 import pandas as pd
 from core.extractor import extract_from_pdf, extract_from_image
 
-from utils.page_helper import init_page
+# init_page disabled
 
-init_page("批量文档解析", "📄")
+# init_page disabled
 
 st.title("📄 批量文档解析")
 

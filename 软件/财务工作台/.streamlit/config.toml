@@ -20,6 +20,3 @@ font = "sans serif"
 [runner]
 magicEnabled = true
 fastReruns = true
-
-[client]
-showSidebarNavigation = false

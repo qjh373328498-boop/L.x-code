@@ -6,9 +6,9 @@ import pandas as pd
 
 from datetime import datetime
 from utils.database import get_connection, init_db
-from utils.page_helper import init_page
+# init_page disabled
 
-init_page("凭证录入", "📝")
+# init_page disabled
 
 st.title("📝 凭证录入")
 
