@@ -18,8 +18,8 @@ textColor = "#262730"
 font = "sans serif"
 
 [runner]
-# 启用魔术命令缓存
 magicEnabled = true
-
-# 启用快速重运行
 fastReruns = true
+
+[client]
+showSidebarNavigation = false
