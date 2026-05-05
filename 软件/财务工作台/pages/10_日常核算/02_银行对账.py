@@ -11,6 +11,7 @@ if '_session_init' not in st.session_state:
 
 from datetime import datetime, timedelta
 from utils.database import get_connection, init_db
+from utils.constants import Tolerance, DateTolerance, CacheTTL
 from difflib import SequenceMatcher
 
 st.set_page_config(page_title="银行对账", page_icon="🏦", layout="wide")
@@ -19,7 +20,7 @@ init_db()
 st.title("🏦 银行对账")
 
 # ========== 性能优化：缓存对账结果 ==========
-@st.cache_data(ttl=1800)  # 30 分钟缓存
+@st.cache_data(ttl=CacheTTL.BANK_RECONCILIATION)  # 30 分钟缓存
 def get_reconciliation_cached(tolerance: float, date_tol: int):
     """执行银行对账匹配（带缓存）"""
     conn = get_connection()
@@ -123,8 +124,8 @@ with tab2:
 with tab3:
     st.subheader("智能对账匹配")
     
-    tolerance = st.number_input("金额容差范围", value=0.01, step=0.01)
-    date_tolerance = st.number_input("日期容差 (天)", value=3, min_value=0)
+    tolerance = st.number_input("金额容差范围", value=Tolerance.DEFAULT, step=0.01)
+    date_tolerance = st.number_input("日期容差 (天)", value=DateTolerance.DEFAULT, min_value=0)
     
     # 性能优化：使用缓存的对账结果
     if st.button("开始对账", type="primary"):

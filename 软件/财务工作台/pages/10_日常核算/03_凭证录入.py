@@ -4,16 +4,11 @@
 import streamlit as st
 import pandas as pd
 
-# ========== 性能优化 ==========
-# Session State: 保存用户输入
-if '_session_init' not in st.session_state:
-    st.session_state._session_init = True
-
 from datetime import datetime
 from utils.database import get_connection, init_db
+from utils.page_helper import init_page
 
-st.set_page_config(page_title="凭证录入", page_icon="📝", layout="wide")
-init_db()
+init_page("凭证录入", "📝")
 
 st.title("📝 凭证录入")
 

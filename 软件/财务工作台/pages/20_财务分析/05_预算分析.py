@@ -9,11 +9,13 @@ if '_loaded' not in st.session_state:
     st.session_state._loaded = True
 
 import plotly.graph_objects as go
-from utils.database import get_connection, init_db
+from utils.database import get_connection
+from utils.page_helper import init_page
 from utils.formatters import format_currency
 
-st.set_page_config(page_title="预算分析", page_icon="📊", layout="wide")
-init_db()
+from utils.page_helper import init_page
+
+init_page("预算分析", "📊")
 
 st.title("📊 预算分析")
 

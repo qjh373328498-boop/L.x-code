@@ -5,7 +5,9 @@ import streamlit as st
 from core.compliance import check_reimbursement, validate_invoice
 from core.desensitizer import desensitize_phone, desensitize_id_card, desensitize_text
 
-st.set_page_config(page_title="合规风控", page_icon="🛡️", layout="wide")
+from utils.page_helper import init_page
+
+init_page("合规风控", "🛡️")
 
 st.title("🛡️ 合规风控")
 

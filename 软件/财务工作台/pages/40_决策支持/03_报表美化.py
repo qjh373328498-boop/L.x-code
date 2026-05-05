@@ -5,7 +5,9 @@ import streamlit as st
 import pandas as pd
 from core.reporter import generate_html_report, create_analysis_summary
 
-st.set_page_config(page_title="报表美化", page_icon="📊", layout="wide")
+from utils.page_helper import init_page
+
+init_page("报表美化", "📊")
 
 st.title("📊 报表美化")
 

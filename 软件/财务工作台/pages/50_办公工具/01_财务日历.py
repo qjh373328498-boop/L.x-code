@@ -6,14 +6,14 @@ import pandas as pd
 
 # ========== 性能优化 ==========
 # Session State: 保存用户输入
-if '_session_init' not in st.session_state:
-    st.session_state._session_init = True
 
 from datetime import datetime, timedelta
-from utils.database import get_connection, init_db
+from utils.database import get_connection
+from utils.page_helper import init_page
 
-st.set_page_config(page_title="财务日历", page_icon="📅", layout="wide")
-init_db()
+from utils.page_helper import init_page
+
+init_page("财务日历", "📅")
 
 st.title("📅 财务日历")
 

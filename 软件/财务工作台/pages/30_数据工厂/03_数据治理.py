@@ -4,7 +4,9 @@ FinCopilot - 数据治理页面
 import streamlit as st
 from core.cleaner import find_similar_names, standardize_name
 
-st.set_page_config(page_title="数据治理", page_icon="🧹", layout="wide")
+from utils.page_helper import init_page
+
+init_page("数据治理", "🧹")
 
 st.title("🧹 数据治理")
 

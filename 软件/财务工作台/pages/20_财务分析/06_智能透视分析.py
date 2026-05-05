@@ -5,10 +5,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.database import get_connection, init_db
+from utils.database import get_connection
+from utils.page_helper import init_page
 
-st.set_page_config(page_title="智能透视分析", page_icon="🎯", layout="wide")
-init_db()
+from utils.page_helper import init_page
+
+init_page("智能透视分析", "🎯")
 
 st.title("🎯 智能透视分析")
 

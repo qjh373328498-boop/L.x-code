@@ -13,6 +13,7 @@ if '_session_init' not in st.session_state:
 from datetime import datetime
 from utils.database import get_connection, init_db
 from utils.query_optimizer import get_paginated_data, render_pagination
+from utils.constants import InvoiceTypes, InvoiceStatus, CacheTTL
 
 st.set_page_config(page_title="发票管家", page_icon="📄", layout="wide")
 init_db()
@@ -20,7 +21,7 @@ init_db()
 st.title("📄 发票管家")
 
 # ========== 性能优化：缓存发票数据查询 ==========
-@st.cache_data(ttl=300)  # 5 分钟缓存
+@st.cache_data(ttl=CacheTTL.INVOICE_QUERY)  # 5 分钟缓存
 def get_invoices_cached(where_clause: str = "", params: tuple = ()):
     """获取发票数据（带缓存）"""
     conn = get_connection()
@@ -42,10 +43,10 @@ with tab1:
         amount = st.number_input("金额", min_value=0.0, step=0.01, key="invoice_amount")
     
     with col2:
-        inv_type = st.selectbox("发票类型", ["专用发票", "普通发票", "电子发票"], key="invoice_type")
+        inv_type = st.selectbox("发票类型", InvoiceTypes.OPTIONS, key="invoice_type")
         supplier = st.text_input("销售方", key="invoice_supplier")
         buyer = st.text_input("购买方", key="invoice_buyer")
-        status = st.selectbox("认证状态", ["未认证", "已认证", "已退票"], key="invoice_status")
+        status = st.selectbox("认证状态", InvoiceStatus.OPTIONS, key="invoice_status")
     
     if st.button("保存发票", type="primary", key="save_invoice"):
         if code and number and amount:
@@ -168,10 +169,10 @@ with tab3:
                         str(row.get('number', '')),
                         row.get('date', datetime.now().strftime('%Y-%m-%d')),
                         float(row.get('amount', 0)),
-                        row.get('type', '普通发票'),
+                        row.get('type', InvoiceTypes.NORMAL),
                         row.get('supplier', ''),
                         row.get('buyer', ''),
-                        row.get('status', '未认证')
+                        row.get('status', InvoiceStatus.UNCERTIFIED)
                     ))
                 
                 with st.spinner("正在导入数据..."):

@@ -6,16 +6,16 @@ import pandas as pd
 
 # ========== 性能优化 ==========
 # Session State: 保存用户输入
-if '_session_init' not in st.session_state:
-    st.session_state._session_init = True
 
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
-from utils.database import get_connection, init_db
+from utils.database import get_connection
+from utils.page_helper import init_page
 from utils.formatters import format_currency
 
-st.set_page_config(page_title="资金诊断", page_icon="💰", layout="wide")
-init_db()
+from utils.page_helper import init_page
+
+init_page("资金诊断", "💰")
 
 st.title("💰 资金诊断")
 

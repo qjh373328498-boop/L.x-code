@@ -6,7 +6,9 @@ import os
 import tempfile
 from core.extractor import extract_from_pdf, extract_from_image
 
-st.set_page_config(page_title="文档解析", page_icon="📄", layout="wide")
+from utils.page_helper import init_page
+
+init_page("文档解析", "📄")
 
 st.title("📄 文档解析")
 

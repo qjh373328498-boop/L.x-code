@@ -4,7 +4,9 @@
 """
 import streamlit as st
 
-st.set_page_config(page_title="帮助中心", page_icon="❓", layout="wide")
+from utils.page_helper import init_page
+
+init_page("帮助中心", "❓")
 
 st.title("❓ 帮助中心")
 

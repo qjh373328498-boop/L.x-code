@@ -8,10 +8,13 @@ from datetime import datetime
 from io import BytesIO
 import json
 import plotly.express as px
-from utils.database import get_connection, get_dashboard_stats
+from utils.database import get_connection
+from utils.page_helper import init_page, get_dashboard_stats
 from utils.formatters import format_currency
 
-st.set_page_config(page_title="增强功能", page_icon="🚀", layout="wide")
+from utils.page_helper import init_page
+
+init_page("增强功能", "🚀")
 
 st.title("🚀 增强功能")
 

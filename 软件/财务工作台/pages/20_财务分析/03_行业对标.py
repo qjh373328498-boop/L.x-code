@@ -9,13 +9,14 @@ import plotly.graph_objects as go
 import sys
 sys.path.append('/workspace/软件/财务工作台')
 from utils.industry_2025 import INDUSTRY_STANDARDS, INDUSTRY_KEYWORDS
+from utils.constants import CacheTTL
 
-st.set_page_config(page_title="行业对标", page_icon="🏭", layout="wide")
+init_page("行业对标", "🏭")
 
 st.title("🏭 行业对标分析")
 
 # ========== 性能优化：行业数据缓存 ==========
-@st.cache_data(ttl=86400)  # 24 小时缓存
+@st.cache_data(ttl=CacheTTL.INDUSTRY_DATA)  # 24 小时缓存
 def get_industry_data_cached(industry_name: str):
     """获取行业数据（带缓存）"""
     if industry_name in INDUSTRY_STANDARDS:

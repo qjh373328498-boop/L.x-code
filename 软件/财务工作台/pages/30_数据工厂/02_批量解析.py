@@ -8,7 +8,9 @@ import tempfile
 import pandas as pd
 from core.extractor import extract_from_pdf, extract_from_image
 
-st.set_page_config(page_title="批量文档解析", page_icon="📄", layout="wide")
+from utils.page_helper import init_page
+
+init_page("批量文档解析", "📄")
 
 st.title("📄 批量文档解析")
 

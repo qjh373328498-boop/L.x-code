@@ -9,12 +9,13 @@
 import streamlit as st
 import hashlib
 from datetime import datetime
+from utils.constants import UI, DefaultAccounts, Roles
 
 # 页面配置
 st.set_page_config(
     page_title="财务工作台",
-    page_icon="📊",
-    layout="wide",
+    page_icon=UI.DEFAULT_ICON,
+    layout=UI.DEFAULT_LAYOUT,
     initial_sidebar_state="expanded"
 )
 
@@ -42,20 +43,20 @@ def check_user(username: str, password: str) -> bool:
     - intern / intern123 (实习生)
     """
     users = {
-        'admin': sha256_hash('703102'),
-        'finance': sha256_hash('finance123'),
-        'intern': sha256_hash('intern123'),
+        DefaultAccounts.ADMIN['username']: sha256_hash(DefaultAccounts.ADMIN['password']),
+        DefaultAccounts.FINANCE['username']: sha256_hash(DefaultAccounts.FINANCE['password']),
+        DefaultAccounts.INTERN['username']: sha256_hash(DefaultAccounts.INTERN['password']),
     }
     return username in users and users[username] == sha256_hash(password)
 
 
 def get_user_role(username: str) -> str:
     """获取用户角色"""
-    if username == 'admin':
-        return 'admin'
-    elif username == 'finance':
-        return 'finance'
-    return 'intern'
+    if username == DefaultAccounts.ADMIN['username']:
+        return Roles.ADMIN
+    elif username == DefaultAccounts.FINANCE['username']:
+        return Roles.FINANCE
+    return Roles.INTERN
 
 
 def login():
@@ -102,7 +103,7 @@ def logout():
     if st.sidebar.button("🔓 退出登录"):
         st.session_state.authenticated = False
         st.session_state.username = None
-        st.session_state.role = 'guest'
+        st.session_state.role = Roles.GUEST
         st.rerun()
 
 

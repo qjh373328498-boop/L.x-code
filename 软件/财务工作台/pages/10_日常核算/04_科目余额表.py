@@ -6,14 +6,14 @@ import pandas as pd
 
 # ========== 性能优化 ==========
 # Session State: 保存用户输入
-if '_session_init' not in st.session_state:
-    st.session_state._session_init = True
 
-from utils.database import get_connection, init_db
+from utils.database import get_connection
+from utils.page_helper import init_page
 from utils.formatters import format_currency
 
-st.set_page_config(page_title="科目余额表", page_icon="📊", layout="wide")
-init_db()
+from utils.page_helper import init_page
+
+init_page("科目余额表", "📊")
 
 st.title("📊 科目余额表")
 

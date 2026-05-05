@@ -4,21 +4,17 @@
 import streamlit as st
 import pandas as pd
 
-# ========== 性能优化 ==========
-# Session State: 保存用户输入
-if '_session_init' not in st.session_state:
-    st.session_state._session_init = True
-
-from utils.database import get_connection, init_db
+from utils.database import get_connection
+from utils.page_helper import init_page
 from utils.formatters import format_currency
+from utils.constants import CacheTTL
 
-st.set_page_config(page_title="财务比率分析", page_icon="📊", layout="wide")
-init_db()
+init_page("财务比率分析", "📊")
 
 st.title("📊 财务比率分析")
 
 # ========== 缓存优化 ==========
-@st.cache_data(ttl=300)  # 5 分钟缓存
+@st.cache_data(ttl=CacheTTL.FINANCIAL_RATIOS)  # 10 分钟缓存
 def load_financial_data():
     """加载财务数据（带缓存）"""
     conn = get_connection()

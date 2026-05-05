@@ -6,7 +6,9 @@ import psutil
 import os
 from utils.cache import clear_cache, show_cache_status
 
-st.set_page_config(page_title="缓存管理", page_icon="🛠️", layout="wide")
+from utils.page_helper import init_page
+
+init_page("缓存管理", "🛠️")
 
 st.title("🛠️ 缓存管理")
 
