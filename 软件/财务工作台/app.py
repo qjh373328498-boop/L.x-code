@@ -377,6 +377,9 @@ def main():
     
     最后更新：2026-05-05
     """)
+    
+    # 默认显示首页仪表盘
+    show_dashboard()
 
 
 if __name__ == "__main__":
