@@ -23,6 +23,3 @@ magicEnabled = true
 
 # 启用快速重运行
 fastReruns = true
-
-# 启用文件监视器
-fileWatcherType = "auto"
