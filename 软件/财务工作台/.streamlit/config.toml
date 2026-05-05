@@ -21,4 +21,3 @@ magicEnabled = true
 
 # 禁用不需要的功能
 fastReruns = true
-maxCachedMessageSize = 10

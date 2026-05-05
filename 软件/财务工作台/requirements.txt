@@ -11,3 +11,4 @@ pyperclip==1.8.2
 numpy-financial==1.0.0
 fuzzywuzzy==0.18.0
 PyMuPDF==1.23.8
+psutil==5.9.7
