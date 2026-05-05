@@ -1,8 +1,13 @@
 """
 财务工作台 v2.0 - 手动路由控制（最稳定方案）
 """
+import os
+from pathlib import Path
 import streamlit as st
 import hashlib
+
+# 获取脚本所在目录的绝对路径
+BASE_DIR = Path(__file__).parent.resolve()
 
 st.set_page_config(
     page_title="财务工作台",
@@ -90,31 +95,31 @@ def main():
         # 页面路由字典
         PAGES = {
             "首页": show_home,
-            "📄 发票管理": lambda: exec(open("pages/10_01_发票管理.py").read(), globals()),
-            "🏦 银行对账": lambda: exec(open("pages/10_02_银行对账.py").read(), globals()),
-            "📝 凭证录入": lambda: exec(open("pages/10_03_凭证录入.py").read(), globals()),
-            "📋 科目余额表": lambda: exec(open("pages/10_04_科目余额表.py").read(), globals()),
-            "💰 应收应付管理": lambda: exec(open("pages/10_05_应收应付管理.py").read(), globals()),
-            "📑 纳税申报": lambda: exec(open("pages/10_06_纳税申报.py").read(), globals()),
-            "📊 财务比率分析": lambda: exec(open("pages/20_01_财务比率分析.py").read(), globals()),
-            "🏛️ 杜邦分析": lambda: exec(open("pages/20_02_杜邦分析.py").read(), globals()),
-            "🏭 行业对标": lambda: exec(open("pages/20_03_行业对标.py").read(), globals()),
-            "💵 资金诊断": lambda: exec(open("pages/20_04_资金诊断.py").read(), globals()),
-            "📈 预算分析": lambda: exec(open("pages/20_05_预算分析.py").read(), globals()),
-            "🎯 智能透视分析": lambda: exec(open("pages/20_06_智能透视分析.py").read(), globals()),
-            "📄 文档解析": lambda: exec(open("pages/30_01_文档解析.py").read(), globals()),
-            "📄 批量解析": lambda: exec(open("pages/30_02_批量解析.py").read(), globals()),
-            "🧹 数据治理": lambda: exec(open("pages/30_03_数据治理.py").read(), globals()),
-            "🛡️ 合规风控": lambda: exec(open("pages/30_04_合规风控.py").read(), globals()),
-            "🧮 金融测算": lambda: exec(open("pages/40_01_金融测算.py").read(), globals()),
-            "📊 本量利分析": lambda: exec(open("pages/40_02_本量利分析.py").read(), globals()),
-            "📑 报表美化": lambda: exec(open("pages/40_03_报表美化.py").read(), globals()),
-            "📅 财务日历": lambda: exec(open("pages/50_01_财务日历.py").read(), globals()),
-            "🧰 快捷工具箱": lambda: exec(open("pages/50_02_快捷工具箱.py").read(), globals()),
-            "📋 模板中心": lambda: exec(open("pages/50_03_模板中心.py").read(), globals()),
-            "🗑️ 缓存管理": lambda: exec(open("pages/50_04_缓存管理.py").read(), globals()),
-            "🚀 增强功能": lambda: exec(open("pages/50_05_增强功能.py").read(), globals()),
-            "❓ 帮助中心": lambda: exec(open("pages/50_06_帮助中心.py").read(), globals()),
+            "📄 发票管理": lambda: exec(open(BASE_DIR / "pages" / "10_01_发票管理.py", encoding="utf-8").read(), globals()),
+            "🏦 银行对账": lambda: exec(open(BASE_DIR / "pages" / "10_02_银行对账.py", encoding="utf-8").read(), globals()),
+            "📝 凭证录入": lambda: exec(open(BASE_DIR / "pages" / "10_03_凭证录入.py", encoding="utf-8").read(), globals()),
+            "📋 科目余额表": lambda: exec(open(BASE_DIR / "pages" / "10_04_科目余额表.py", encoding="utf-8").read(), globals()),
+            "💰 应收应付管理": lambda: exec(open(BASE_DIR / "pages" / "10_05_应收应付管理.py", encoding="utf-8").read(), globals()),
+            "📑 纳税申报": lambda: exec(open(BASE_DIR / "pages" / "10_06_纳税申报.py", encoding="utf-8").read(), globals()),
+            "📊 财务比率分析": lambda: exec(open(BASE_DIR / "pages" / "20_01_财务比率分析.py", encoding="utf-8").read(), globals()),
+            "🏛️ 杜邦分析": lambda: exec(open(BASE_DIR / "pages" / "20_02_杜邦分析.py", encoding="utf-8").read(), globals()),
+            "🏭 行业对标": lambda: exec(open(BASE_DIR / "pages" / "20_03_行业对标.py", encoding="utf-8").read(), globals()),
+            "💵 资金诊断": lambda: exec(open(BASE_DIR / "pages" / "20_04_资金诊断.py", encoding="utf-8").read(), globals()),
+            "📈 预算分析": lambda: exec(open(BASE_DIR / "pages" / "20_05_预算分析.py", encoding="utf-8").read(), globals()),
+            "🎯 智能透视分析": lambda: exec(open(BASE_DIR / "pages" / "20_06_智能透视分析.py", encoding="utf-8").read(), globals()),
+            "📄 文档解析": lambda: exec(open(BASE_DIR / "pages" / "30_01_文档解析.py", encoding="utf-8").read(), globals()),
+            "📄 批量解析": lambda: exec(open(BASE_DIR / "pages" / "30_02_批量解析.py", encoding="utf-8").read(), globals()),
+            "🧹 数据治理": lambda: exec(open(BASE_DIR / "pages" / "30_03_数据治理.py", encoding="utf-8").read(), globals()),
+            "🛡️ 合规风控": lambda: exec(open(BASE_DIR / "pages" / "30_04_合规风控.py", encoding="utf-8").read(), globals()),
+            "🧮 金融测算": lambda: exec(open(BASE_DIR / "pages" / "40_01_金融测算.py", encoding="utf-8").read(), globals()),
+            "📊 本量利分析": lambda: exec(open(BASE_DIR / "pages" / "40_02_本量利分析.py", encoding="utf-8").read(), globals()),
+            "📑 报表美化": lambda: exec(open(BASE_DIR / "pages" / "40_03_报表美化.py", encoding="utf-8").read(), globals()),
+            "📅 财务日历": lambda: exec(open(BASE_DIR / "pages" / "50_01_财务日历.py", encoding="utf-8").read(), globals()),
+            "🧰 快捷工具箱": lambda: exec(open(BASE_DIR / "pages" / "50_02_快捷工具箱.py", encoding="utf-8").read(), globals()),
+            "📋 模板中心": lambda: exec(open(BASE_DIR / "pages" / "50_03_模板中心.py", encoding="utf-8").read(), globals()),
+            "🗑️ 缓存管理": lambda: exec(open(BASE_DIR / "pages" / "50_04_缓存管理.py", encoding="utf-8").read(), globals()),
+            "🚀 增强功能": lambda: exec(open(BASE_DIR / "pages" / "50_05_增强功能.py", encoding="utf-8").read(), globals()),
+            "❓ 帮助中心": lambda: exec(open(BASE_DIR / "pages" / "50_06_帮助中心.py", encoding="utf-8").read(), globals()),
         }
         
         # 导航按钮
