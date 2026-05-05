@@ -191,22 +191,27 @@ def main():
     st.sidebar.markdown("---")
     
     if st.sidebar.button("🏠 返回首页", use_container_width=True, key="home_btn"):
-        st.session_state.current_page = "home"
+        st.session_state.current_page = None
         st.rerun()
     
     sections = create_nav_pages()
     
-    for section_name, pages in sections.items():
-        if pages:
-            with st.sidebar.expander(f"📁 {section_name}", expanded=False):
-                for page in pages:
-                    if st.button(f"📄 {page.title}", key=f"nav_{page.title}", use_container_width=True):
-                        page.run()
+    current_page = st.session_state.get('current_page', None)
     
-    st.sidebar.markdown("---")
-    st.sidebar.info("**财务工作台 v2.0**\n\n2026-05-05")
-    
-    if st.session_state.get('current_page', 'home') == 'home':
+    if current_page:
+        current_page.run()
+    else:
+        for section_name, pages in sections.items():
+            if pages:
+                with st.sidebar.expander(f"📁 {section_name}", expanded=False):
+                    for page in pages:
+                        if st.button(f"📄 {page.title}", key=f"nav_{page.title}", use_container_width=True):
+                            st.session_state.current_page = page
+                            st.rerun()
+        
+        st.sidebar.markdown("---")
+        st.sidebar.info("**财务工作台 v2.0**\n\n2026-05-05")
+        
         show_dashboard()
 
 
