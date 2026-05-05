@@ -63,7 +63,7 @@ def show_home():
     with tabs[3]:
         st.markdown("**决策支持**\n\n| 功能 | 说明 |\n|------|------|\n| 🧮 金融测算 | 折旧/IRR/NPV/年金计算 |\n| 📊 本量利分析 | 成本 - 业务量 - 利润分析 |\n| 📑 报表美化 | PDF 报告自动生成 |")
     with tabs[4]:
-        st.markdown("**办公工具**\n\n| 功能 | 说明 |\n|------|------|\n| 📅 财务日历 | 重要日期提醒 |\n| 🧰 快捷工具箱 | 计算器/对比/计时器 |\n| 📋 模板中心 | 16 种财务模板下载 |\n| 🚀 增强功能 | 数据导出/导入/备份 |\n| ❓ 帮助中心 | 使用指南与常见问题 |")
+        st.markdown("**办公工具**\n\n| 功能 | 说明 |\n|------|------|\n| 📅 财务日历 | 重要日期提醒 |\n| 🧰 快捷工具箱 | 计算器/对比/计时器 |\n| 📋 模板中心 | 16 种财务模板下载 |\n| 🗑️ 缓存管理 | 清理系统缓存和临时文件 |\n| 🚀 增强功能 | 数据导出/导入/备份 |\n| ❓ 帮助中心 | 使用指南与常见问题 |")
 
 
 def main():
@@ -90,30 +90,31 @@ def main():
         # 页面路由字典
         PAGES = {
             "首页": show_home,
-            "📄 发票管理": lambda: exec(open("pages/10_01_发票管理.py").read()),
-            "🏦 银行对账": lambda: exec(open("pages/10_02_银行对账.py").read()),
-            "📝 凭证录入": lambda: exec(open("pages/10_03_凭证录入.py").read()),
-            "📋 科目余额表": lambda: exec(open("pages/10_04_科目余额表.py").read()),
-            "💰 应收应付管理": lambda: exec(open("pages/10_05_应收应付管理.py").read()),
-            "📑 纳税申报": lambda: exec(open("pages/10_06_纳税申报.py").read()),
-            "📊 财务比率分析": lambda: exec(open("pages/20_01_财务比率分析.py").read()),
-            "🏛️ 杜邦分析": lambda: exec(open("pages/20_02_杜邦分析.py").read()),
-            "🏭 行业对标": lambda: exec(open("pages/20_03_行业对标.py").read()),
-            "💵 资金诊断": lambda: exec(open("pages/20_04_资金诊断.py").read()),
-            "📈 预算分析": lambda: exec(open("pages/20_05_预算分析.py").read()),
-            "🎯 智能透视分析": lambda: exec(open("pages/20_06_智能透视分析.py").read()),
-            "📄 文档解析": lambda: exec(open("pages/30_01_文档解析.py").read()),
-            "📄 批量解析": lambda: exec(open("pages/30_02_批量解析.py").read()),
-            "🧹 数据治理": lambda: exec(open("pages/30_03_数据治理.py").read()),
-            "🛡️ 合规风控": lambda: exec(open("pages/30_04_合规风控.py").read()),
-            "🧮 金融测算": lambda: exec(open("pages/40_01_金融测算.py").read()),
-            "📊 本量利分析": lambda: exec(open("pages/40_02_本量利分析.py").read()),
-            "📑 报表美化": lambda: exec(open("pages/40_03_报表美化.py").read()),
-            "📅 财务日历": lambda: exec(open("pages/50_01_财务日历.py").read()),
-            "🧰 快捷工具箱": lambda: exec(open("pages/50_02_快捷工具箱.py").read()),
-            "📋 模板中心": lambda: exec(open("pages/50_03_模板中心.py").read()),
-            "🚀 增强功能": lambda: exec(open("pages/50_05_增强功能.py").read()),
-            "❓ 帮助中心": lambda: exec(open("pages/50_06_帮助中心.py").read()),
+            "📄 发票管理": lambda: exec(open("pages/10_01_发票管理.py").read(), globals()),
+            "🏦 银行对账": lambda: exec(open("pages/10_02_银行对账.py").read(), globals()),
+            "📝 凭证录入": lambda: exec(open("pages/10_03_凭证录入.py").read(), globals()),
+            "📋 科目余额表": lambda: exec(open("pages/10_04_科目余额表.py").read(), globals()),
+            "💰 应收应付管理": lambda: exec(open("pages/10_05_应收应付管理.py").read(), globals()),
+            "📑 纳税申报": lambda: exec(open("pages/10_06_纳税申报.py").read(), globals()),
+            "📊 财务比率分析": lambda: exec(open("pages/20_01_财务比率分析.py").read(), globals()),
+            "🏛️ 杜邦分析": lambda: exec(open("pages/20_02_杜邦分析.py").read(), globals()),
+            "🏭 行业对标": lambda: exec(open("pages/20_03_行业对标.py").read(), globals()),
+            "💵 资金诊断": lambda: exec(open("pages/20_04_资金诊断.py").read(), globals()),
+            "📈 预算分析": lambda: exec(open("pages/20_05_预算分析.py").read(), globals()),
+            "🎯 智能透视分析": lambda: exec(open("pages/20_06_智能透视分析.py").read(), globals()),
+            "📄 文档解析": lambda: exec(open("pages/30_01_文档解析.py").read(), globals()),
+            "📄 批量解析": lambda: exec(open("pages/30_02_批量解析.py").read(), globals()),
+            "🧹 数据治理": lambda: exec(open("pages/30_03_数据治理.py").read(), globals()),
+            "🛡️ 合规风控": lambda: exec(open("pages/30_04_合规风控.py").read(), globals()),
+            "🧮 金融测算": lambda: exec(open("pages/40_01_金融测算.py").read(), globals()),
+            "📊 本量利分析": lambda: exec(open("pages/40_02_本量利分析.py").read(), globals()),
+            "📑 报表美化": lambda: exec(open("pages/40_03_报表美化.py").read(), globals()),
+            "📅 财务日历": lambda: exec(open("pages/50_01_财务日历.py").read(), globals()),
+            "🧰 快捷工具箱": lambda: exec(open("pages/50_02_快捷工具箱.py").read(), globals()),
+            "📋 模板中心": lambda: exec(open("pages/50_03_模板中心.py").read(), globals()),
+            "🗑️ 缓存管理": lambda: exec(open("pages/50_04_缓存管理.py").read(), globals()),
+            "🚀 增强功能": lambda: exec(open("pages/50_05_增强功能.py").read(), globals()),
+            "❓ 帮助中心": lambda: exec(open("pages/50_06_帮助中心.py").read(), globals()),
         }
         
         # 导航按钮
@@ -148,7 +149,7 @@ def main():
                     st.rerun()
         
         with st.expander("🧰 办公工具", expanded=False):
-            for name in ["📅 财务日历", "🧰 快捷工具箱", "📋 模板中心", "🚀 增强功能", "❓ 帮助中心"]:
+            for name in ["📅 财务日历", "🧰 快捷工具箱", "📋 模板中心", "🗑️ 缓存管理", "🚀 增强功能", "❓ 帮助中心"]:
                 if st.button(name, use_container_width=True, key=f"nav_{name}"):
                     st.session_state.current_page = name
                     st.rerun()
