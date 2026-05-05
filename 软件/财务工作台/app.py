@@ -292,50 +292,79 @@ def main():
     # 已登录状态
     logout()
     
-    # 侧边栏
+    # 侧边栏导航 - 折叠菜单风格
     st.sidebar.title("📊 财务工作台")
     st.sidebar.markdown(f"👤 {st.session_state.username} | 角色：{st.session_state.role}")
     st.sidebar.markdown("---")
     
-    # 主导航
-    main_menu = st.sidebar.selectbox(
-        "📋 主菜单",
-        ["🏠 首页", "📝 日常核算", "📊 财务分析", "🏭 数据工厂", "💼 决策支持", "🧰 办公工具"]
-    )
+    # 使用 expander 实现折叠菜单效果
+    if st.sidebar.button("🏠 返回首页", use_container_width=True):
+        st.switch_page("app.py")
     
-    # 子菜单
-    if main_menu == "🏠 首页":
-        show_dashboard()
-    elif main_menu == "📝 日常核算":
-        sub_menu = st.sidebar.radio(
-            "日常核算",
-            ["📄 发票管理", "🏦 银行对账", "📝 凭证录入", "📋 科目余额表", "💰 应收应付管理", "📑 纳税申报"]
-        )
-        st.sidebar.info("提示：在左侧选择具体功能页面\n\n页面将在主区域打开")
-    elif main_menu == "📊 财务分析":
-        sub_menu = st.sidebar.radio(
-            "财务分析",
-            ["📊 财务比率分析", "🏛️ 杜邦分析", "🏭 行业对标", "💵 资金诊断", "📈 预算分析", "🎯 智能透视分析"]
-        )
-        st.sidebar.info("提示：在左侧选择具体功能页面\n\n页面将在主区域打开")
-    elif main_menu == "🏭 数据工厂":
-        sub_menu = st.sidebar.radio(
-            "数据工厂",
-            ["📄 文档解析", "📄 批量解析", "🧹 数据治理", "🛡️ 合规风控"]
-        )
-        st.sidebar.info("提示：在左侧选择具体功能页面\n\n页面将在主区域打开")
-    elif main_menu == "💼 决策支持":
-        sub_menu = st.sidebar.radio(
-            "决策支持",
-            ["🧮 金融测算", "📊 本量利分析", "📑 报表美化"]
-        )
-        st.sidebar.info("提示：在左侧选择具体功能页面\n\n页面将在主区域打开")
-    elif main_menu == "🧰 办公工具":
-        sub_menu = st.sidebar.radio(
-            "办公工具",
-            ["📅 财务日历", "🧰 快捷工具箱", "📋 模板中心", "🚀 增强功能", "❓ 帮助中心"]
-        )
-        st.sidebar.info("提示：在左侧选择具体功能页面\n\n页面将在主区域打开")
+    st.sidebar.markdown("### 📁 功能模块")
+    
+    # 模块 1: 日常核算
+    with st.sidebar.expander("📝 日常核算", expanded=False):
+        if st.button("📄 发票管理", key="nav_invoice", use_container_width=True):
+            st.switch_page("pages/10_01_发票管理.py")
+        if st.button("🏦 银行对账", key="nav_bank", use_container_width=True):
+            st.switch_page("pages/10_02_银行对账.py")
+        if st.button("📝 凭证录入", key="nav_voucher", use_container_width=True):
+            st.switch_page("pages/10_03_凭证录入.py")
+        if st.button("📋 科目余额表", key="nav_balance", use_container_width=True):
+            st.switch_page("pages/10_04_科目余额表.py")
+        if st.button("💰 应收应付管理", key="nav_arap", use_container_width=True):
+            st.switch_page("pages/10_05_应收应付管理.py")
+        if st.button("📑 纳税申报", key="nav_tax", use_container_width=True):
+            st.switch_page("pages/10_06_纳税申报.py")
+    
+    # 模块 2: 财务分析
+    with st.sidebar.expander("📊 财务分析", expanded=False):
+        if st.button("📊 财务比率分析", key="nav_ratios", use_container_width=True):
+            st.switch_page("pages/20_01_财务比率分析.py")
+        if st.button("🏛️ 杜邦分析", key="nav_dupont", use_container_width=True):
+            st.switch_page("pages/20_02_杜邦分析.py")
+        if st.button("🏭 行业对标", key="nav_industry", use_container_width=True):
+            st.switch_page("pages/20_03_行业对标.py")
+        if st.button("💵 资金诊断", key="nav_cashflow", use_container_width=True):
+            st.switch_page("pages/20_04_资金诊断.py")
+        if st.button("📈 预算分析", key="nav_budget", use_container_width=True):
+            st.switch_page("pages/20_05_预算分析.py")
+        if st.button("🎯 智能透视分析", key="nav_pivot", use_container_width=True):
+            st.switch_page("pages/20_06_智能透视分析.py")
+    
+    # 模块 3: 数据工厂
+    with st.sidebar.expander("🏭 数据工厂", expanded=False):
+        if st.button("📄 文档解析", key="nav_docparse", use_container_width=True):
+            st.switch_page("pages/30_01_文档解析.py")
+        if st.button("📄 批量解析", key="nav_batch", use_container_width=True):
+            st.switch_page("pages/30_02_批量解析.py")
+        if st.button("🧹 数据治理", key="nav_governance", use_container_width=True):
+            st.switch_page("pages/30_03_数据治理.py")
+        if st.button("🛡️ 合规风控", key="nav_compliance", use_container_width=True):
+            st.switch_page("pages/30_04_合规风控.py")
+    
+    # 模块 4: 决策支持
+    with st.sidebar.expander("💼 决策支持", expanded=False):
+        if st.button("🧮 金融测算", key="nav_finance", use_container_width=True):
+            st.switch_page("pages/40_01_金融测算.py")
+        if st.button("📊 本量利分析", key="nav_cvp", use_container_width=True):
+            st.switch_page("pages/40_02_本量利分析.py")
+        if st.button("📑 报表美化", key="nav_beautify", use_container_width=True):
+            st.switch_page("pages/40_03_报表美化.py")
+    
+    # 模块 5: 办公工具
+    with st.sidebar.expander("🧰 办公工具", expanded=False):
+        if st.button("📅 财务日历", key="nav_calendar", use_container_width=True):
+            st.switch_page("pages/50_01_财务日历.py")
+        if st.button("🧰 快捷工具箱", key="nav_tools", use_container_width=True):
+            st.switch_page("pages/50_02_快捷工具箱.py")
+        if st.button("📋 模板中心", key="nav_template", use_container_width=True):
+            st.switch_page("pages/50_03_模板中心.py")
+        if st.button("🚀 增强功能", key="nav_enhanced", use_container_width=True):
+            st.switch_page("pages/50_05_增强功能.py")
+        if st.button("❓ 帮助中心", key="nav_help", use_container_width=True):
+            st.switch_page("pages/50_06_帮助中心.py")
     
     # 侧边栏底部信息
     st.sidebar.markdown("---")
