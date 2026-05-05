@@ -9,6 +9,8 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 import os
+import json
+from io import BytesIO
 
 # ==================== 页面配置 ====================
 st.set_page_config(
@@ -782,15 +784,190 @@ def show_dupont():
 
 def show_industry():
     st.title("🏭 行业对标")
-    st.info("行业对标功能开发中...")
+    st.subheader("选择行业")
+    industries = ["制造业", "信息技术", "批发零售", "餐饮服务", "建筑业", "交通运输", "房地产业", "金融业"]
+    selected_industry = st.selectbox("选择所属行业", industries)
+    
+    st.subheader("企业财务数据")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("**盈利能力**")
+        company_gross_margin = st.number_input("毛利率 (%)", min_value=0.0, value=30.0, step=0.1, key="ind_gm")
+        company_net_margin = st.number_input("净利润率 (%)", min_value=0.0, value=10.0, step=0.1, key="ind_nm")
+        company_roe = st.number_input("净资产收益率 (%)", min_value=0.0, value=15.0, step=0.1, key="ind_roe")
+    with col2:
+        st.markdown("**偿债能力**")
+        company_current_ratio = st.number_input("流动比率", min_value=0.0, value=2.0, step=0.1, key="ind_cr")
+        company_quick_ratio = st.number_input("速动比率", min_value=0.0, value=1.5, step=0.1, key="ind_qr")
+        company_debt_ratio = st.number_input("资产负债率 (%)", min_value=0.0, value=50.0, step=0.1, key="ind_dr")
+    with col3:
+        st.markdown("**营运能力**")
+        company_ar_turnover = st.number_input("应收账款周转率 (次)", min_value=0.0, value=6.0, step=0.1, key="ind_art")
+        company_inv_turnover = st.number_input("存货周转率 (次)", min_value=0.0, value=8.0, step=0.1, key="ind_inv")
+    
+    if st.button("开始对比分析", type="primary", key="ind_compare"):
+        industry_avg = {
+            '制造业': {'毛利率': 25.0, '净利率': 8.0, 'ROE': 12.0, '流动比率': 1.8, '速动比率': 1.0, '资产负债率': 50.0, '应收周转': 6.0, '存货周转': 5.0},
+            '信息技术': {'毛利率': 45.0, '净利率': 18.0, 'ROE': 20.0, '流动比率': 2.5, '速动比率': 2.0, '资产负债率': 35.0, '应收周转': 8.0, '存货周转': 10.0},
+            '批发零售': {'毛利率': 20.0, '净利率': 5.0, 'ROE': 15.0, '流动比率': 1.5, '速动比率': 0.8, '资产负债率': 55.0, '应收周转': 10.0, '存货周转': 8.0},
+        }.get(selected_industry, {'毛利率': 25.0, '净利率': 8.0, 'ROE': 12.0, '流动比率': 1.8, '速动比率': 1.0, '资产负债率': 50.0, '应收周转': 6.0, '存货周转': 5.0})
+        
+        st.subheader("📊 对比结果")
+        metrics = ['毛利率', '净利率', 'ROE', '流动比率', '速动比率', '资产负债率']
+        company_vals = [company_gross_margin, company_net_margin, company_roe, company_current_ratio, company_quick_ratio, company_debt_ratio]
+        industry_vals = [industry_avg['毛利率'], industry_avg['净利率'], industry_avg['ROE'], industry_avg['流动比率'], industry_avg['速动比率'], industry_avg['资产负债率']]
+        
+        import plotly.graph_objects as go
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name='行业平均', x=metrics, y=industry_vals, marker_color='lightblue'))
+        fig.add_trace(go.Bar(name='本公司', x=metrics, y=company_vals, marker_color='steelblue'))
+        fig.update_layout(barmode='group', height=500, xaxis_title="指标", yaxis_title="数值", showlegend=True)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.subheader("💡 评价与建议")
+        if company_gross_margin > industry_avg['毛利率']:
+            st.success(f"✅ 毛利率 ({company_gross_margin:.1f}%) 高于行业平均 ({industry_avg['毛利率']:.1f}%)，产品竞争力强")
+        else:
+            st.warning(f"⚠️ 毛利率 ({company_gross_margin:.1f}%) 低于行业平均 ({industry_avg['毛利率']:.1f}%)，需提升产品附加值")
+        if company_current_ratio > industry_avg['流动比率']:
+            st.success(f"✅ 流动比率 ({company_current_ratio:.1f}) 高于行业平均 ({industry_avg['流动比率']:.1f})，短期偿债能力强")
+        else:
+            st.warning(f"⚠️ 流动比率 ({company_current_ratio:.1f}) 低于行业平均 ({industry_avg['流动比率']:.1f})，注意资金风险")
 
 def show_cashflow():
     st.title("💵 资金诊断")
-    st.info("资金诊断功能开发中...")
+    tab1, tab2 = st.tabs(["数据录入", "资金分析"])
+    with tab1:
+        st.subheader("录入资金数据")
+        col1, col2 = st.columns(2)
+        with col1:
+            period = st.text_input("期间", placeholder="2024-01", key="cf_period")
+            opening_cash = st.number_input("期初货币资金", value=0.0, key="cf_opening")
+            closing_cash = st.number_input("期末货币资金", value=0.0, key="cf_closing")
+            avg_receivables = st.number_input("平均应收账款", value=0.0, key="cf_ar")
+            avg_inventory = st.number_input("平均存货", value=0.0, key="cf_inv")
+        with col2:
+            revenue = st.number_input("营业收入", value=0.0, key="cf_rev")
+            cogs = st.number_input("营业成本", value=0.0, key="cf_cogs")
+            operating_expense = st.number_input("期间费用", value=0.0, key="cf_exp")
+            operating_cash_flow = st.number_input("经营活动现金流净额", value=0.0, key="cf_ocf")
+        if st.button("保存数据", type="primary", key="cf_save"):
+            if period:
+                conn = get_connection()
+                metrics = [('期初货币资金', opening_cash), ('期末货币资金', closing_cash), ('平均应收账款', avg_receivables), ('平均存货', avg_inventory), ('营业收入', revenue), ('营业成本', cogs), ('期间费用', operating_expense), ('经营现金流', operating_cash_flow)]
+                for m_name, m_val in metrics:
+                    conn.execute("INSERT OR REPLACE INTO financial_metrics (period, metric_name, value, unit) VALUES (?, ?, ?, ?)", (period, m_name, m_val, '元'))
+                conn.commit()
+                conn.close()
+                st.success("数据保存成功")
+    with tab2:
+        st.subheader("资金使用效率分析")
+        conn = get_connection()
+        df_all = pd.read_sql_query("SELECT * FROM financial_metrics ORDER BY period DESC", conn)
+        conn.close()
+        if df_all.empty:
+            st.info("暂无数据，请先录入")
+        else:
+            latest_period = df_all['period'].max()
+            df = df_all[df_all['period'] == latest_period]
+            m = dict(zip(df['metric_name'], df['value']))
+            opening = m.get('期初货币资金', 0); closing = m.get('期末货币资金', 0)
+            avg_ar = m.get('平均应收账款', 0); avg_inv = m.get('平均存货', 0)
+            revenue = m.get('营业收入', 0); cogs = m.get('营业成本', 0)
+            ocf = m.get('经营现金流', 0)
+            
+            avg_cash = (opening + closing) / 2
+            ar_turnover = revenue / avg_ar if avg_ar > 0 else 0
+            ar_days = 365 / ar_turnover if ar_turnover > 0 else 0
+            inv_turnover = cogs / avg_inv if avg_inv > 0 else 0
+            inv_days = 365 / inv_turnover if inv_turnover > 0 else 0
+            cash_to_asset = closing / (closing + avg_ar + avg_inv) * 100 if (closing + avg_ar + avg_inv) > 0 else 0
+            
+            st.subheader("📊 核心指标")
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("货币资金", f"¥{closing:,.0f}", f"平均：¥{avg_cash:,.0f}")
+            col2.metric("应收账款周转天数", f"{ar_days:.0f} 天", f"周转率：{ar_turnover:.1f}次")
+            col3.metric("存货周转天数", f"{inv_days:.0f} 天", f"周转率：{inv_turnover:.1f}次")
+            col4.metric("资金占比", f"{cash_to_asset:.1f}%", "货币资金/总资产")
+            
+            st.divider()
+            st.subheader("💡 资金诊断建议")
+            if ar_days > 90:
+                st.warning(f"⚠️ 应收账款周转天数 ({ar_days:.0f}天) 较长，建议加强催收管理")
+            else:
+                st.success(f"✅ 应收账款周转天数 ({ar_days:.0f}天) 合理")
+            if inv_days > 60:
+                st.warning(f"⚠️ 存货周转天数 ({inv_days:.0f}天) 较长，建议优化库存管理")
+            else:
+                st.success(f"✅ 存货周转天数 ({inv_days:.0f}天) 合理")
+            if ocf < 0:
+                st.error(f"❌ 经营活动现金流为负 (¥{ocf:,.0f})，需关注资金链安全")
+            else:
+                st.success(f"✅ 经营活动现金流健康 (¥{ocf:,.0f})")
 
 def show_budget():
     st.title("📈 预算分析")
-    st.info("预算分析功能开发中...")
+    tab1, tab2 = st.tabs(["预算录入", "执行分析"])
+    with tab1:
+        st.subheader("录入预算数据")
+        col1, col2 = st.columns(2)
+        with col1:
+            period = st.text_input("期间", placeholder="2024-01", key="bud_period")
+            budget_revenue = st.number_input("预算收入", value=0.0, key="bud_rev")
+            budget_cost = st.number_input("预算成本", value=0.0, key="bud_cost")
+            budget_expense = st.number_input("预算费用", value=0.0, key="bud_exp")
+        with col2:
+            actual_revenue = st.number_input("实际收入", value=0.0, key="act_rev")
+            actual_cost = st.number_input("实际成本", value=0.0, key="act_cost")
+            actual_expense = st.number_input("实际费用", value=0.0, key="act_exp")
+        if st.button("保存预算数据", type="primary", key="bud_save"):
+            if period:
+                conn = get_connection()
+                metrics = [('预算收入', budget_revenue), ('预算成本', budget_cost), ('预算费用', budget_expense), ('实际收入', actual_revenue), ('实际成本', actual_cost), ('实际费用', actual_expense)]
+                for m_name, m_val in metrics:
+                    conn.execute("INSERT OR REPLACE INTO financial_metrics (period, metric_name, value, unit) VALUES (?, ?, ?, ?)", (period, m_name, m_val, '元'))
+                conn.commit()
+                conn.close()
+                st.success("预算数据保存成功")
+    with tab2:
+        st.subheader("预算执行分析")
+        conn = get_connection()
+        df_all = pd.read_sql_query("SELECT * FROM financial_metrics ORDER BY period DESC", conn)
+        conn.close()
+        if df_all.empty:
+            st.info("暂无数据")
+        else:
+            latest_period = df_all['period'].max()
+            df = df_all[df_all['period'] == latest_period]
+            m = dict(zip(df['metric_name'], df['value']))
+            bud_rev = m.get('预算收入', 0); act_rev = m.get('实际收入', 0)
+            bud_cost = m.get('预算成本', 0); act_cost = m.get('实际成本', 0)
+            bud_exp = m.get('预算费用', 0); act_exp = m.get('实际费用', 0)
+            
+            rev_var = ((act_rev - bud_rev) / bud_rev * 100) if bud_rev > 0 else 0
+            cost_var = ((act_cost - bud_cost) / bud_cost * 100) if bud_cost > 0 else 0
+            exp_var = ((act_exp - bud_exp) / bud_exp * 100) if bud_exp > 0 else 0
+            
+            st.subheader("📊 预算执行对比")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("收入", f"¥{act_rev:,.0f}", f"预算：¥{bud_rev:,.0f} ({rev_var:+.1f}%)")
+            col2.metric("成本", f"¥{act_cost:,.0f}", f"预算：¥{bud_cost:,.0f} ({cost_var:+.1f}%)", delta_color="inverse")
+            col3.metric("费用", f"¥{act_exp:,.0f}", f"预算：¥{bud_exp:,.0f} ({exp_var:+.1f}%)", delta_color="inverse")
+            
+            st.divider()
+            st.subheader("💡 预算执行评价")
+            if rev_var >= 0:
+                st.success(f"✅ 收入超额完成 {rev_var:.1f}%")
+            else:
+                st.error(f"❌ 收入未达标，差 {abs(rev_var):.1f}%")
+            if cost_var <= 0:
+                st.success(f"✅ 成本控制在预算内 ({cost_var:+.1f}%)")
+            else:
+                st.warning(f"⚠️ 成本超支 {cost_var:.1f}%")
+            if exp_var <= 0:
+                st.success(f"✅ 费用控制在预算内 ({exp_var:+.1f}%)")
+            else:
+                st.warning(f"⚠️ 费用超支 {exp_var:.1f}%")
 
 def show_pivot():
     st.title("🎯 智能透视分析")
@@ -915,7 +1092,70 @@ def show_finance_calc():
 
 def show_cvp():
     st.title("📊 本量利分析")
-    st.info("本量利分析功能开发中...")
+    st.sidebar.header("输入参数")
+    fixed_cost = st.sidebar.number_input("固定成本 (元)", value=100000.0, step=1000.0, key="cvp_fc")
+    unit_price = st.sidebar.number_input("单价 (元)", value=100.0, step=1.0, key="cvp_price")
+    unit_variable_cost = st.sidebar.number_input("单位变动成本 (元)", value=60.0, step=1.0, key="cvp_vc")
+    sales_volume = st.sidebar.number_input("预计销量 (件)", value=5000, step=100, key="cvp_vol")
+    
+    contribution_margin = unit_price - unit_variable_cost
+    contribution_margin_ratio = contribution_margin / unit_price if unit_price > 0 else 0
+    break_even_volume = fixed_cost / contribution_margin if contribution_margin > 0 else 0
+    break_even_revenue = break_even_volume * unit_price
+    
+    st.subheader("📊 核心指标")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("单位边际贡献", f"¥{contribution_margin:,.2f}")
+    col2.metric("边际贡献率", f"{contribution_margin_ratio * 100:.1f}%")
+    col3.metric("盈亏平衡点 (销量)", f"{break_even_volume:.0f} 件")
+    col4.metric("盈亏平衡点 (金额)", f"¥{break_even_revenue:,.2f}")
+    
+    st.divider()
+    tab1, tab2 = st.tabs(["盈亏平衡图", "敏感性分析"])
+    with tab1:
+        volumes = list(range(0, int(sales_volume * 1.5), max(100, int(sales_volume // 10))))
+        revenue = [v * unit_price for v in volumes]
+        total_cost = [fixed_cost + v * unit_variable_cost for v in volumes]
+        import plotly.graph_objects as go
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=volumes, y=revenue, name='销售收入', line=dict(width=3)))
+        fig.add_trace(go.Scatter(x=volumes, y=total_cost, name='总成本', line=dict(width=3)))
+        fig.add_trace(go.Scatter(x=volumes, y=[fixed_cost] * len(volumes), name='固定成本', line=dict(dash='dash')))
+        fig.add_vline(x=break_even_volume, line_dash="dash", annotation_text="盈亏平衡点")
+        fig.update_layout(xaxis_title="销量 (件)", yaxis_title="金额 (元)", height=500, hovermode='x unified')
+        st.plotly_chart(fig, use_container_width=True)
+    with tab2:
+        factor = st.slider("变动幅度", -50, 50, 20, key="cvp_factor")
+        base_profit = sales_volume * contribution_margin - fixed_cost
+        scenarios = []
+        scenarios.append({'因素': '基准方案', '利润': base_profit, '变动率': '0.0%'})
+        new_price = unit_price * (1 + factor / 100)
+        new_profit = sales_volume * (new_price - unit_variable_cost) - fixed_cost
+        change = (new_profit - base_profit) / base_profit * 100 if base_profit != 0 else 0
+        scenarios.append({'因素': f'价格 {factor:+d}%', '利润': new_profit, '变动率': f'{change:+.1f}%'})
+        new_vc = unit_variable_cost * (1 + factor / 100)
+        new_profit = sales_volume * (unit_price - new_vc) - fixed_cost
+        change = (new_profit - base_profit) / base_profit * 100 if base_profit != 0 else 0
+        scenarios.append({'因素': f'变动成本 {factor:+d}%', '利润': new_profit, '变动率': f'{change:+.1f}%'})
+        new_fc = fixed_cost * (1 + factor / 100)
+        new_profit = sales_volume * contribution_margin - new_fc
+        change = (new_profit - base_profit) / base_profit * 100 if base_profit != 0 else 0
+        scenarios.append({'因素': f'固定成本 {factor:+d}%', '利润': new_profit, '变动率': f'{change:+.1f}%'})
+        new_volume = sales_volume * (1 + factor / 100)
+        new_profit = new_volume * contribution_margin - fixed_cost
+        change = (new_profit - base_profit) / base_profit * 100 if base_profit != 0 else 0
+        scenarios.append({'因素': f'销量 {factor:+d}%', '利润': new_profit, '变动率': f'{change:+.1f}%'})
+        df_scenarios = pd.DataFrame(scenarios)
+        df_scenarios['利润'] = df_scenarios['利润'].apply(lambda x: f"¥{x:,.0f}")
+        st.dataframe(df_scenarios, use_container_width=True, hide_index=True)
+    
+    st.divider()
+    current_profit = sales_volume * contribution_margin - fixed_cost
+    margin_of_safety = (sales_volume - break_even_volume) / sales_volume * 100 if sales_volume > 0 else 0
+    st.subheader("💡 经营安全分析")
+    col1, col2 = st.columns(2)
+    col1.info(f"**当前利润**: ¥{current_profit:,.2f}\n\n**安全边际率**: {margin_of_safety:.1f}%\n\n{'✅ 经营很安全' if margin_of_safety > 30 else '⚠️ 需要注意风险' if margin_of_safety > 10 else '❌ 经营风险较高'}")
+    col2.success(f"**经营杠杆系数**: {sales_volume * contribution_margin / current_profit if current_profit > 0 else 0:.2f}\n\n销量每增长 1%,利润将增长 {sales_volume * contribution_margin / current_profit if current_profit > 0 else 0:.1f}%")
 
 def show_beautify():
     st.title("📑 报表美化")
@@ -923,7 +1163,96 @@ def show_beautify():
 
 def show_tools():
     st.title("🧰 快捷工具箱")
-    st.info("快捷工具箱功能开发中...")
+    tool = st.selectbox("选择工具", ["🧮 快速计算器", "📊 批量对比", "⏱️ 计时器", "📝 快速备忘录"])
+    if tool == "🧮 快速计算器":
+        calc_type = st.selectbox("计算类型", ["加减乘除", "百分比计算", "税额计算", "小写转大写金额"])
+        if calc_type == "加减乘除":
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                num1 = st.number_input("数字 1", value=0.0, key="calc_num1")
+                op = st.selectbox("运算符", ["+", "-", "×", "÷"], key="calc_op")
+            with col2:
+                num2 = st.number_input("数字 2", value=0.0, key="calc_num2")
+            with col3:
+                if st.button("=", type="primary", key="calc_eq"):
+                    if op == "+": result = num1 + num2
+                    elif op == "-": result = num1 - num2
+                    elif op == "×": result = num1 * num2
+                    elif op == "÷": result = num1 / num2 if num2 != 0 else "错误：除数为 0"
+                    st.metric("结果", result)
+        elif calc_type == "百分比计算":
+            col1, col2 = st.columns(2)
+            with col1:
+                base = st.number_input("基数", value=100.0, key="pct_base")
+                percent = st.number_input("百分比 (%)", value=10.0, key="pct_val")
+            with col2:
+                if st.button("计算百分比", key="pct_btn"):
+                    result = base * (percent / 100)
+                    st.metric("结果", result)
+        elif calc_type == "税额计算":
+            col1, col2 = st.columns(2)
+            with col1:
+                amount = st.number_input("金额", value=1000.0, key="tax_amt")
+                tax_rate = st.selectbox("税率", [0.03, 0.06, 0.09, 0.13, 0.17], key="tax_rate")
+            with col2:
+                if st.button("计算税额", key="tax_btn"):
+                    tax = amount * tax_rate
+                    total = amount + tax
+                    st.metric("税额", f"¥{tax:,.2f}")
+                    st.metric("含税总额", f"¥{total:,.2f}")
+        elif calc_type == "小写转大写金额":
+            amount = st.number_input("小写金额", value=12345.67, key="cap_amt")
+            def num_to_cn_upper(num):
+                cn_upper_map = {'0': '零', '1': '壹', '2': '贰', '3': '叁', '4': '肆', '5': '伍', '6': '陆', '7': '柒', '8': '捌', '9': '玖'}
+                unit = '分角元拾佰仟万拾佰仟亿拾佰仟'
+                num_str = f"{num:.2f}"
+                result = ""
+                unit_index = 0
+                for digit in num_str.replace('.', '').replace('-', ''):
+                    if digit in cn_upper_map:
+                        result += cn_upper_map[digit] + unit[unit_index]
+                        unit_index += 1
+                return result + "整"
+            if st.button("转换", key="cap_btn"):
+                cn_amount = num_to_cn_upper(amount)
+                st.text_area("大写金额", value=cn_amount, height=100)
+    elif tool == "📊 批量对比":
+        data_input = st.text_area("输入数据（每行一组，逗号分隔）", placeholder="例如：\n2024 年，1000,200,50\n2025 年，1200,250,60\n2026 年，1500,300,75")
+        if data_input:
+            lines = data_input.strip().split('\n')
+            data = [line.split(',') for line in lines]
+            df = pd.DataFrame(data)
+            st.dataframe(df, use_container_width=True)
+            csv = df.to_csv(index=False, encoding='utf-8-sig')
+            st.download_button(label="📥 导出为 CSV", data=csv, file_name="批量对比数据.csv", mime='text/csv')
+    elif tool == "⏱️ 计时器":
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            hours = st.number_input("小时", min_value=0, max_value=23, value=0, key="timer_h")
+        with col2:
+            minutes = st.number_input("分钟", min_value=0, max_value=59, value=5, key="timer_m")
+        with col3:
+            seconds = st.number_input("秒", min_value=0, max_value=59, value=0, key="timer_s")
+        total_seconds = hours * 3600 + minutes * 60 + seconds
+        if st.button("▶️ 开始倒计时", key="timer_start"):
+            if total_seconds > 0:
+                progress_bar = st.progress(0)
+                timer_text = st.empty()
+                remaining = total_seconds
+                while remaining > 0:
+                    mins, secs = divmod(remaining, 60)
+                    hrs, mins = divmod(mins, 60)
+                    timer_text.text(f"剩余时间：{hrs:02d}:{mins:02d}:{secs:02d}")
+                    progress_bar.progress(1 - remaining / total_seconds)
+                    import time
+                    time.sleep(1)
+                    remaining -= 1
+                timer_text.text("⏰ 时间到！")
+                st.balloons()
+    elif tool == "📝 快速备忘录":
+        notes = st.text_area("输入备忘内容", height=300, placeholder="在此记录重要事项...")
+        if notes:
+            st.download_button(label="💾 保存为文本文件", data=notes, file_name=f"备忘录_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt", mime='text/plain')
 
 def show_template():
     st.title("📋 模板中心")
@@ -931,7 +1260,94 @@ def show_template():
 
 def show_enhanced():
     st.title("🚀 增强功能")
-    st.info("增强功能开发中...")
+    tab1, tab2, tab3 = st.tabs(["数据导出", "数据导入", "备份恢复"])
+    tables = {'invoice': '发票数据', 'bank_statement': '银行流水', 'company_statement': '企业账务', 'voucher': '凭证主表', 'voucher_entry': '凭证分录', 'ar_ap': '应收应付', 'calendar_event': '日历事件', 'financial_metrics': '财务指标'}
+    with tab1:
+        st.subheader("导出数据到 Excel")
+        selected_table = st.selectbox("选择要导出的表", list(tables.keys()), format_func=lambda x: tables[x], key="exp_table")
+        if st.button("导出 Excel", type="primary", key="exp_btn"):
+            try:
+                conn = get_connection()
+                df = pd.read_sql_query(f"SELECT * FROM {selected_table}", conn)
+                conn.close()
+                if not df.empty:
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False, sheet_name=selected_table)
+                    st.download_button(label=f"📥 下载 {tables[selected_table]}.xlsx", data=output.getvalue(), file_name=f"{selected_table}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    st.success(f"导出成功，共 {len(df)} 条记录")
+                else:
+                    st.warning("该表暂无数据")
+            except Exception as e:
+                st.error(f"导出失败：{e}")
+    with tab2:
+        st.subheader("从 Excel 导入数据")
+        uploaded_file = st.file_uploader("上传 Excel 文件", type=['xlsx', 'xls'], key="imp_file")
+        target_table = st.selectbox("导入到表", list(tables.keys()), format_func=lambda x: tables[x], key="imp_table")
+        if uploaded_file and st.button("开始导入", key="imp_btn"):
+            try:
+                df = pd.read_excel(uploaded_file)
+                st.write(f"预览数据（前 5 行）:")
+                st.dataframe(df.head())
+                conn = get_connection()
+                count = 0
+                for _, row in df.iterrows():
+                    try:
+                        row_dict = row.dropna().to_dict()
+                        if not row_dict: continue
+                        columns = ', '.join(row_dict.keys())
+                        placeholders = ', '.join(['?' for _ in row_dict])
+                        values = list(row_dict.values())
+                        conn.execute(f"INSERT OR REPLACE INTO {target_table} ({columns}) VALUES ({placeholders})", values)
+                        count += 1
+                    except: pass
+                conn.commit()
+                conn.close()
+                st.success(f"导入完成，共 {count} 条记录")
+            except Exception as e:
+                st.error(f"导入失败：{e}")
+    with tab3:
+        st.subheader("数据备份与恢复")
+        st.warning("⚠️ 备份操作会导出所有数据，恢复操作会清空现有数据并导入备份文件")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("### 📤 备份全部数据")
+            if st.button("备份所有数据", type="primary", key="backup_btn"):
+                try:
+                    conn = get_connection()
+                    backup_data = {}
+                    for table_name in tables.keys():
+                        df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
+                        backup_data[table_name] = df.to_dict('records')
+                    conn.close()
+                    backup_json = json.dumps(backup_data, ensure_ascii=False, default=str)
+                    st.download_button(label="📥 下载备份文件", data=backup_json, file_name=f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", mime="application/json")
+                    st.success("备份数据已生成")
+                except Exception as e:
+                    st.error(f"备份失败：{e}")
+        with col2:
+            st.markdown("### 📥 恢复数据")
+            backup_file = st.file_uploader("上传备份文件", type=['json'], key="restore_file")
+            if backup_file and st.button("恢复数据", type="primary", key="restore_btn"):
+                try:
+                    backup_data = json.load(backup_file)
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    total_imported = 0
+                    for table_name, records in backup_data.items():
+                        for record in records:
+                            try:
+                                columns = ', '.join(record.keys())
+                                placeholders = ', '.join(['?' for _ in record])
+                                cursor.execute(f"INSERT OR REPLACE INTO {table_name} ({columns}) VALUES ({placeholders})", list(record.values()))
+                                total_imported += 1
+                            except: pass
+                    conn.commit()
+                    conn.close()
+                    st.success(f"恢复完成，共导入 {total_imported} 条记录")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"恢复失败：{e}")
 
 def show_help():
     st.title("❓ 帮助中心")
