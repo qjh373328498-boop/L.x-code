@@ -1,5 +1,5 @@
 """
-📊 财务比率分析 - 偿债、盈利、营运能力分析
+📊 财务比率分析 - 偿债、盈利、营运能力分析（带缓存优化）
 """
 import streamlit as st
 import pandas as pd
@@ -16,6 +16,32 @@ st.set_page_config(page_title="财务比率分析", page_icon="📊", layout="wi
 init_db()
 
 st.title("📊 财务比率分析")
+
+# ========== 缓存优化 ==========
+@st.cache_data(ttl=300)  # 5 分钟缓存
+def load_financial_data():
+    """加载财务数据（带缓存）"""
+    conn = get_connection()
+    df = pd.read_sql_query("SELECT * FROM financial_metrics ORDER BY period DESC", conn)
+    conn.close()
+    return df
+
+@st.cache_data
+def calculate_ratios(df: pd.DataFrame) -> pd.DataFrame:
+    """计算财务比率（结果缓存）"""
+    if df.empty:
+        return pd.DataFrame()
+    
+    # 计算流动比率
+    df['current_ratio'] = df['流动资产'] / df['流动负债'].replace(0, 1)
+    # 计算速动比率
+    df['quick_ratio'] = (df['流动资产'] - df['存货']) / df['流动负债'].replace(0, 1)
+    # 计算资产负债率
+    df['debt_ratio'] = df['负债总计'] / df['资产总计'].replace(0, 1) * 100
+    # 计算净资产收益率
+    df['roe'] = df['净利润'] / df['所有者权益'].replace(0, 1) * 100
+    
+    return df
 
 tab1, tab2, tab3 = st.tabs(["数据录入", "比率分析", "行业对比"])
 

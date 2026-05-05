@@ -1,5 +1,5 @@
 """
-财务工具箱 - 增强版数据库工具
+财务工具箱 - 增强版数据库工具（带缓存）
 """
 import sqlite3
 import hashlib
@@ -7,14 +7,16 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+import streamlit as st
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "finance.db"
 
 
+@st.cache_resource
 def get_connection():
-    """获取数据库连接"""
+    """获取数据库连接（资源缓存）"""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
