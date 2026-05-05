@@ -1,0 +1,15 @@
+# FinCopilot 配置文件
+[theme]
+primaryColor = "#3498db"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif"
+
+[server]
+headless = true
+address = "0.0.0.0"
+port = 8501
+
+[browser]
+gatherUsageStats = false
