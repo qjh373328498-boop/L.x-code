@@ -2,6 +2,7 @@
 📄 发票管家 - 发票录入、查询、认证管理（性能优化版）
 """
 import streamlit as st
+from utils.page_helper import init_page
 import pandas as pd
 import sqlite3
 
@@ -15,8 +16,8 @@ from utils.database import get_connection, init_db
 from utils.query_optimizer import get_paginated_data, render_pagination
 from utils.constants import InvoiceTypes, InvoiceStatus, CacheTTL
 
-st.set_page_config(page_title="发票管家", page_icon="📄", layout="wide")
 init_db()
+init_page("01_发票管理")
 
 st.title("📄 发票管家")
 

@@ -2,6 +2,7 @@
 🏦 银行对账 - 自动匹配银行流水与企业账务
 """
 import streamlit as st
+from utils.page_helper import init_page
 import pandas as pd
 
 # ========== 性能优化 ==========
@@ -14,8 +15,8 @@ from utils.database import get_connection, init_db
 from utils.constants import Tolerance, DateTolerance, CacheTTL
 from difflib import SequenceMatcher
 
-st.set_page_config(page_title="银行对账", page_icon="🏦", layout="wide")
 init_db()
+init_page("02_银行对账")
 
 st.title("🏦 银行对账")
 
