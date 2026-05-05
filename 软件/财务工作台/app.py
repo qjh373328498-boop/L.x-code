@@ -1,5 +1,5 @@
 """
-财务工作台 v2.0 - 使用 st.navigation() 官方 API
+财务工作台 v2.0 - 手动路由控制（最稳定方案）
 """
 import streamlit as st
 import hashlib
@@ -15,6 +15,8 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 if 'username' not in st.session_state:
     st.session_state.username = None
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = "首页"
 
 
 def sha256_hash(password: str) -> str:
@@ -47,34 +49,21 @@ def login():
         st.info("**默认账户**\n\n管理员：admin / 703102\n财务专员：finance / finance123\n实习生：intern / intern123")
 
 
-def logout():
-    if st.sidebar.button("🔓 退出登录", use_container_width=True):
-        st.session_state.authenticated = False
-        st.session_state.username = None
-        st.rerun()
-
-
 def show_home():
     st.title("📊 财务工作台")
-    if st.session_state.username:
-        st.markdown(f"欢迎回来，**{st.session_state.username}**！")
+    st.markdown(f"欢迎回来，**{st.session_state.username}**！")
     st.markdown("---")
-    st.markdown("""
-### 📋 功能模块
-
-**📝 日常核算** - 发票管理、银行对账、凭证录入等
-
-**📊 财务分析** - 财务比率、杜邦分析、行业对标等
-
-**🏭 数据工厂** - 文档解析、批量解析、数据治理等
-
-**💼 决策支持** - 金融测算、本量利分析、报表美化等
-
-**🧰 办公工具** - 财务日历、快捷工具箱、模板中心等
-
----
-**请从左侧导航栏选择具体功能页面**
-""")
+    tabs = st.tabs(["📝 日常核算", "📊 财务分析", "🏭 数据工厂", "💼 决策支持", "🧰 办公工具"])
+    with tabs[0]:
+        st.markdown("**日常核算**\n\n| 功能 | 说明 |\n|------|------|\n| 📄 发票管理 | 发票录入、查询、认证管理 |\n| 🏦 银行对账 | 银行流水与企业账务智能匹配 |\n| 📝 凭证录入 | 会计凭证录入与审核 |\n| 📋 科目余额表 | 科目余额查询与导出 |\n| 💰 应收应付管理 | 往来账款管理与核销 |\n| 📑 纳税申报 | 税费计算与纳税申报 |")
+    with tabs[1]:
+        st.markdown("**财务分析**\n\n| 功能 | 说明 |\n|------|------|\n| 📊 财务比率分析 | 偿债、盈利、营运能力分析 |\n| 🏛️ 杜邦分析 | 完整杜邦分析法可视化 |\n| 🏭 行业对标 | 9 大行业标准对比分析 |\n| 💵 资金诊断 | 资金流健康度分析 |\n| 📈 预算分析 | 预算编制与执行对比 |\n| 🎯 智能透视分析 | 多维度数据透视分析 |")
+    with tabs[2]:
+        st.markdown("**数据工厂**\n\n| 功能 | 说明 |\n|------|------|\n| 📄 文档解析 | PDF/图片提取关键信息 |\n| 📄 批量解析 | 一次上传多个文件批量提取 |\n| 🧹 数据治理 | 供应商名称聚类清洗 |\n| 🛡️ 合规风控 | 报销预审、数据脱敏 |")
+    with tabs[3]:
+        st.markdown("**决策支持**\n\n| 功能 | 说明 |\n|------|------|\n| 🧮 金融测算 | 折旧/IRR/NPV/年金计算 |\n| 📊 本量利分析 | 成本 - 业务量 - 利润分析 |\n| 📑 报表美化 | PDF 报告自动生成 |")
+    with tabs[4]:
+        st.markdown("**办公工具**\n\n| 功能 | 说明 |\n|------|------|\n| 📅 财务日历 | 重要日期提醒 |\n| 🧰 快捷工具箱 | 计算器/对比/计时器 |\n| 📋 模板中心 | 16 种财务模板下载 |\n| 🚀 增强功能 | 数据导出/导入/备份 |\n| ❓ 帮助中心 | 使用指南与常见问题 |")
 
 
 def main():
@@ -86,40 +75,91 @@ def main():
         login()
         return
     
-    logout()
+    # 侧边栏
+    with st.sidebar:
+        st.title("📊 财务工作台")
+        
+        if st.button("🔓 退出登录", use_container_width=True):
+            st.session_state.authenticated = False
+            st.session_state.username = None
+            st.session_state.current_page = "首页"
+            st.rerun()
+        
+        st.divider()
+        
+        # 页面路由字典
+        PAGES = {
+            "首页": show_home,
+            "📄 发票管理": lambda: exec(open("pages/10_01_发票管理.py").read()),
+            "🏦 银行对账": lambda: exec(open("pages/10_02_银行对账.py").read()),
+            "📝 凭证录入": lambda: exec(open("pages/10_03_凭证录入.py").read()),
+            "📋 科目余额表": lambda: exec(open("pages/10_04_科目余额表.py").read()),
+            "💰 应收应付管理": lambda: exec(open("pages/10_05_应收应付管理.py").read()),
+            "📑 纳税申报": lambda: exec(open("pages/10_06_纳税申报.py").read()),
+            "📊 财务比率分析": lambda: exec(open("pages/20_01_财务比率分析.py").read()),
+            "🏛️ 杜邦分析": lambda: exec(open("pages/20_02_杜邦分析.py").read()),
+            "🏭 行业对标": lambda: exec(open("pages/20_03_行业对标.py").read()),
+            "💵 资金诊断": lambda: exec(open("pages/20_04_资金诊断.py").read()),
+            "📈 预算分析": lambda: exec(open("pages/20_05_预算分析.py").read()),
+            "🎯 智能透视分析": lambda: exec(open("pages/20_06_智能透视分析.py").read()),
+            "📄 文档解析": lambda: exec(open("pages/30_01_文档解析.py").read()),
+            "📄 批量解析": lambda: exec(open("pages/30_02_批量解析.py").read()),
+            "🧹 数据治理": lambda: exec(open("pages/30_03_数据治理.py").read()),
+            "🛡️ 合规风控": lambda: exec(open("pages/30_04_合规风控.py").read()),
+            "🧮 金融测算": lambda: exec(open("pages/40_01_金融测算.py").read()),
+            "📊 本量利分析": lambda: exec(open("pages/40_02_本量利分析.py").read()),
+            "📑 报表美化": lambda: exec(open("pages/40_03_报表美化.py").read()),
+            "📅 财务日历": lambda: exec(open("pages/50_01_财务日历.py").read()),
+            "🧰 快捷工具箱": lambda: exec(open("pages/50_02_快捷工具箱.py").read()),
+            "📋 模板中心": lambda: exec(open("pages/50_03_模板中心.py").read()),
+            "🚀 增强功能": lambda: exec(open("pages/50_05_增强功能.py").read()),
+            "❓ 帮助中心": lambda: exec(open("pages/50_06_帮助中心.py").read()),
+        }
+        
+        # 导航按钮
+        if st.button("🏠 首页", use_container_width=True, key="nav_home"):
+            st.session_state.current_page = "首页"
+            st.rerun()
+        
+        st.markdown("### 📁 功能模块")
+        
+        with st.expander("📝 日常核算", expanded=False):
+            for name in ["📄 发票管理", "🏦 银行对账", "📝 凭证录入", "📋 科目余额表", "💰 应收应付管理", "📑 纳税申报"]:
+                if st.button(name, use_container_width=True, key=f"nav_{name}"):
+                    st.session_state.current_page = name
+                    st.rerun()
+        
+        with st.expander("📊 财务分析", expanded=False):
+            for name in ["📊 财务比率分析", "🏛️ 杜邦分析", "🏭 行业对标", "💵 资金诊断", "📈 预算分析", "🎯 智能透视分析"]:
+                if st.button(name, use_container_width=True, key=f"nav_{name}"):
+                    st.session_state.current_page = name
+                    st.rerun()
+        
+        with st.expander("🏭 数据工厂", expanded=False):
+            for name in ["📄 文档解析", "📄 批量解析", "🧹 数据治理", "🛡️ 合规风控"]:
+                if st.button(name, use_container_width=True, key=f"nav_{name}"):
+                    st.session_state.current_page = name
+                    st.rerun()
+        
+        with st.expander("💼 决策支持", expanded=False):
+            for name in ["🧮 金融测算", "📊 本量利分析", "📑 报表美化"]:
+                if st.button(name, use_container_width=True, key=f"nav_{name}"):
+                    st.session_state.current_page = name
+                    st.rerun()
+        
+        with st.expander("🧰 办公工具", expanded=False):
+            for name in ["📅 财务日历", "🧰 快捷工具箱", "📋 模板中心", "🚀 增强功能", "❓ 帮助中心"]:
+                if st.button(name, use_container_width=True, key=f"nav_{name}"):
+                    st.session_state.current_page = name
+                    st.rerun()
+        
+        st.divider()
+        st.info("**财务工作台 v2.0**\n\n2026-05-05")
     
-    # 使用 st.navigation 管理页面导航
-    pg = st.navigation(
-        [
-            st.Page(show_home, title="🏠 首页", icon="🏠"),
-            st.Page("pages/10_01_发票管理.py", title="📄 发票管理", icon="📄"),
-            st.Page("pages/10_02_银行对账.py", title="🏦 银行对账", icon="🏦"),
-            st.Page("pages/10_03_凭证录入.py", title="📝 凭证录入", icon="📝"),
-            st.Page("pages/10_04_科目余额表.py", title="📋 科目余额表", icon="📋"),
-            st.Page("pages/10_05_应收应付管理.py", title="💰 应收应付管理", icon="💰"),
-            st.Page("pages/10_06_纳税申报.py", title="📑 纳税申报", icon="📑"),
-            st.Page("pages/20_01_财务比率分析.py", title="📊 财务比率分析", icon="📊"),
-            st.Page("pages/20_02_杜邦分析.py", title="🏛️ 杜邦分析", icon="🏛️"),
-            st.Page("pages/20_03_行业对标.py", title="🏭 行业对标", icon="🏭"),
-            st.Page("pages/20_04_资金诊断.py", title="💵 资金诊断", icon="💵"),
-            st.Page("pages/20_05_预算分析.py", title="📈 预算分析", icon="📈"),
-            st.Page("pages/20_06_智能透视分析.py", title="🎯 智能透视分析", icon="🎯"),
-            st.Page("pages/30_01_文档解析.py", title="📄 文档解析", icon="📄"),
-            st.Page("pages/30_02_批量解析.py", title="📄 批量解析", icon="📄"),
-            st.Page("pages/30_03_数据治理.py", title="🧹 数据治理", icon="🧹"),
-            st.Page("pages/30_04_合规风控.py", title="🛡️ 合规风控", icon="🛡️"),
-            st.Page("pages/40_01_金融测算.py", title="🧮 金融测算", icon="🧮"),
-            st.Page("pages/40_02_本量利分析.py", title="📊 本量利分析", icon="📊"),
-            st.Page("pages/40_03_报表美化.py", title="📑 报表美化", icon="📑"),
-            st.Page("pages/50_01_财务日历.py", title="📅 财务日历", icon="📅"),
-            st.Page("pages/50_02_快捷工具箱.py", title="🧰 快捷工具箱", icon="🧰"),
-            st.Page("pages/50_03_模板中心.py", title="📋 模板中心", icon="📋"),
-            st.Page("pages/50_05_增强功能.py", title="🚀 增强功能", icon="🚀"),
-            st.Page("pages/50_06_帮助中心.py", title="❓ 帮助中心", icon="❓"),
-        ],
-        position="sidebar"
-    )
-    pg.run()
+    # 渲染当前页面
+    page_func = PAGES.get(st.session_state.current_page)
+    if page_func:
+        page_func()
 
 
 if __name__ == "__main__":
