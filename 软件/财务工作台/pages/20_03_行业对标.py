@@ -8,11 +8,11 @@ import streamlit as st
 import plotly.graph_objects as go
 import sys
 sys.path.append('/workspace/软件/财务工作台')
-# init_page disabled
+from utils.page_helper import init_page
 from utils.industry_2025 import INDUSTRY_STANDARDS, INDUSTRY_KEYWORDS
 from utils.constants import CacheTTL
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("🏭 行业对标分析")
 

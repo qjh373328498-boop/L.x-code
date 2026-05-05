@@ -8,12 +8,12 @@ import pandas as pd
 # Session State: 保存用户输入
 
 from utils.database import get_connection
-# init_page disabled
+from utils.page_helper import init_page
 from utils.formatters import format_currency
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("📊 科目余额表")
 

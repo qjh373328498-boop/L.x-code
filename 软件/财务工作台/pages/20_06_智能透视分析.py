@@ -6,11 +6,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.database import get_connection
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("🎯 智能透视分析")
 

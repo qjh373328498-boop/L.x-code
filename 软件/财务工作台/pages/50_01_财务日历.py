@@ -9,11 +9,11 @@ import pandas as pd
 
 from datetime import datetime, timedelta
 from utils.database import get_connection
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("📅 财务日历")
 

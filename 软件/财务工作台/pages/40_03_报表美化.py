@@ -5,9 +5,9 @@ import streamlit as st
 import pandas as pd
 from core.reporter import generate_html_report, create_analysis_summary
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("📊 报表美化")
 

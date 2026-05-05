@@ -5,11 +5,11 @@ import streamlit as st
 import pandas as pd
 
 from utils.database import get_connection
-# init_page disabled
+from utils.page_helper import init_page
 from utils.formatters import format_currency
 from utils.constants import CacheTTL
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("📊 财务比率分析")
 

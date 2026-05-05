@@ -12,9 +12,9 @@ from core.calculator import (
     calculate_pmt
 )
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("🧮 金融测算")
 

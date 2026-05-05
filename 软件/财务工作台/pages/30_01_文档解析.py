@@ -6,9 +6,9 @@ import os
 import tempfile
 from core.extractor import extract_from_pdf, extract_from_image
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("📄 文档解析")
 

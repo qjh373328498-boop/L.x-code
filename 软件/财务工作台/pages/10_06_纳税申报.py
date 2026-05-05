@@ -9,9 +9,9 @@ import pandas as pd
 
 from utils.formatters import format_currency
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("🧾 纳税申报计算器")
 

@@ -5,9 +5,9 @@ FinCopilot - 模板中心
 import streamlit as st
 import pandas as pd
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("📋 模板中心")
 

@@ -29,9 +29,9 @@ def create_breakeven_chart(fixed_cost, unit_price, unit_cost, volume):
     return fig
 
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("📈 本量利 (CVP) 分析")
 

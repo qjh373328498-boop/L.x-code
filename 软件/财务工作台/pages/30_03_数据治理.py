@@ -4,9 +4,9 @@ FinCopilot - 数据治理页面
 import streamlit as st
 from core.cleaner import find_similar_names, standardize_name
 
-# init_page disabled
+from utils.page_helper import init_page
 
-# init_page disabled
+from utils.page_helper import init_page
 
 st.title("🧹 数据治理")
 
